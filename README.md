@@ -1,36 +1,118 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎁 ParaUsted
+
+> **"El regalo perfecto, para quien tú quieras"**
+
+Digital gift card SaaS platform for local businesses in Spain.
+
+## What is ParaUsted?
+
+ParaUsted enables barbers, restaurants, tour operators, gyms, and any local business to create, sell, deliver, and track personalized digital gift cards — without a website, technical knowledge, or upfront cost.
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js 14 (App Router) + TypeScript + Tailwind CSS |
+| Backend | Next.js API Routes + Supabase Edge Functions |
+| Database | Supabase Postgres (EU Frankfurt) + Row Level Security |
+| Auth | Supabase Auth (Email/Password, Magic Link, Google OAuth) |
+| Payments | Stripe Connect (Express) |
+| Storage | Supabase Storage |
+| Email | Resend |
+| WhatsApp | Meta Business API |
+| CDN/DNS | Cloudflare |
+| Monitoring | Sentry + Vercel Analytics |
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 20+
+- npm 10+
+- Supabase CLI (`npm install -g supabase`)
+- Stripe CLI (for webhook testing)
+
+### Setup
 
 ```bash
+# 1. Clone the repo
+git clone https://github.com/your-org/parausted.git
+cd parausted
+
+# 2. Install dependencies
+npm install
+
+# 3. Set up environment
+cp .env.example .env.local
+# Edit .env.local with your Supabase, Stripe, and other credentials
+
+# 4. Start Supabase locally
+supabase start
+
+# 5. Run migrations
+supabase db reset
+
+# 6. Start dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# 7. Open http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Stripe Webhook Testing (local)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# In a separate terminal:
+stripe listen --forward-to localhost:3000/api/webhooks/stripe
+# Copy the webhook signing secret to .env.local as STRIPE_WEBHOOK_SECRET
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project Structure
 
-## Learn More
+```
+parausted/
+├── .github/              # CI/CD + Copilot instructions
+├── docs/                 # All documentation
+├── public/               # Static assets
+├── src/
+│   ├── app/              # Next.js App Router
+│   │   ├── (public)/     # Public pages (no auth)
+│   │   ├── (merchant)/   # Merchant dashboard (auth required)
+│   │   ├── (admin)/      # Platform admin (MFA required)
+│   │   └── api/          # API routes
+│   ├── components/       # Reusable UI components
+│   ├── lib/              # Core libraries (supabase, stripe, delivery)
+│   ├── types/            # TypeScript types
+│   └── utils/            # Helper functions
+├── supabase/
+│   ├── migrations/       # SQL migrations (version controlled)
+│   └── seed.sql          # Dev test data
+└── tests/                # Unit + integration + E2E
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Key Commands
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server |
+| `npm run build` | Production build |
+| `npm run lint` | ESLint check |
+| `npm run typecheck` | TypeScript strict check |
+| `npm run test` | Run unit tests (Vitest) |
+| `npm run test:e2e` | Run E2E tests (Playwright) |
+| `supabase db reset` | Reset local DB + run all migrations |
+| `supabase db diff` | Generate migration from schema changes |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Documentation
 
-## Deploy on Vercel
+| Document | Location |
+|----------|----------|
+| Product Requirements (PRD) | `docs/PRD/ParaUsted_Gold_Class_PRD.md` |
+| Architecture Decisions | `docs/architecture/ADR/` |
+| API Contract | `docs/architecture/api-contract.md` |
+| Code Conventions | `docs/developer/code-conventions.md` |
+| Test Strategy | `docs/qa/test-strategy.md` |
+| Deployment Runbook | `docs/devops/deployment-runbook.md` |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Proprietary. All rights reserved.
