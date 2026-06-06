@@ -9,6 +9,16 @@ export const esMessages = {
   auth: {
     loginTitle: 'Inicia sesión',
     signupTitle: 'Crea tu cuenta',
+    emailLabel: 'Correo electrónico',
+    passwordLabel: 'Contraseña',
+    loginWithPassword: 'Iniciar sesión con contraseña',
+    sendMagicLink: 'Enviar enlace de acceso',
+    continueWithGoogle: 'Continuar con Google',
+    createAccount: 'Crear cuenta',
+    alreadyHaveAccount: '¿Ya tienes cuenta?',
+    needAccount: '¿Necesitas una cuenta?',
+    checkYourEmail: 'Revisa tu correo para continuar.',
+    genericError: 'No hemos podido completar esa acción. Vuelve a intentarlo.',
   },
   dashboard: {
     title: 'Panel de comerciante',
