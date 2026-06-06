@@ -32,9 +32,9 @@ function requireEnv(name: string): string {
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
   const supabaseUrl = requireEnv('NEXT_PUBLIC_SUPABASE_URL');
-  const supabaseAnonKey = requireEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+  const supabasePublishableKey = requireEnv('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY');
 
-  return createServerClient(supabaseUrl, supabaseAnonKey, {
+  return createServerClient(supabaseUrl, supabasePublishableKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll().map(({ name, value }) => ({

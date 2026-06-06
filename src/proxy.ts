@@ -10,7 +10,9 @@ import {
 } from '@/lib/i18n/config';
 import type { Locale } from '@/lib/i18n/config';
 
-function requireEnv(name: 'NEXT_PUBLIC_SUPABASE_URL' | 'NEXT_PUBLIC_SUPABASE_ANON_KEY'): string {
+function requireEnv(
+  name: 'NEXT_PUBLIC_SUPABASE_URL' | 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
+): string {
   const value = process.env[name];
 
   if (!value) {
@@ -52,11 +54,11 @@ function applySupabaseResponse(
 
 export async function proxy(request: NextRequest) {
   const supabaseUrl = requireEnv('NEXT_PUBLIC_SUPABASE_URL');
-  const supabaseAnonKey = requireEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+  const supabasePublishableKey = requireEnv('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY');
   const responseHeaders = new Headers();
   let response = NextResponse.next({ request: { headers: request.headers } });
 
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+  const supabase = createServerClient(supabaseUrl, supabasePublishableKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll().map(({ name, value }) => ({ name, value }));

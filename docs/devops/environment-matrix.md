@@ -18,7 +18,7 @@
 | Variable | Local | Preview | Production |
 |----------|:-----:|:-------:|:----------:|
 | `NEXT_PUBLIC_SUPABASE_URL` | Local URL | Staging URL | Production URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Local key | Staging key | Production key |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Local key | Staging key | Production key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Local key | Staging key | Production key |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | pk_test_ | pk_test_ | **pk_live_** |
 | `STRIPE_SECRET_KEY` | sk_test_ | sk_test_ | **sk_live_** |
