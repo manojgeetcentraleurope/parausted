@@ -3,6 +3,7 @@
 import {
   useActionState,
   useEffect,
+  useState,
   type ComponentPropsWithoutRef,
   type ReactNode,
 } from 'react';
@@ -26,6 +27,25 @@ type FieldName =
   | 'bankIban'
   | 'brandColor';
 type FormState = CreateMerchantProfileResult | null;
+type MerchantFormValues = Record<FieldName, string>;
+type FieldSlotIds = {
+  descriptionId?: string;
+  errorId?: string;
+};
+
+const initialFormValues: MerchantFormValues = {
+  name: '',
+  slug: '',
+  category: '',
+  description: '',
+  phone: '',
+  websiteUrl: '',
+  address: '',
+  city: 'Sevilla',
+  bizumPhone: '',
+  bankIban: '',
+  brandColor: '#000000',
+};
 
 export type OnboardingFormCopy = {
   title: string;
@@ -58,8 +78,9 @@ type FieldContainerProps = {
   id: string;
   label: string;
   className?: string;
+  description?: ReactNode;
   error?: string;
-  children: (errorId: string | undefined) => ReactNode;
+  children: (ids: FieldSlotIds) => ReactNode;
 };
 
 type FormFieldProps = {
@@ -72,9 +93,14 @@ type FormFieldProps = {
 };
 
 type TextFieldProps = FormFieldProps &
-  Omit<ComponentPropsWithoutRef<'input'>, 'id' | 'name' | 'className' | 'required'> & {
-    defaultValue?: string;
-    type?: 'text' | 'url' | 'tel';
+  Omit<
+    ComponentPropsWithoutRef<'input'>,
+    'id' | 'name' | 'className' | 'required' | 'value' | 'defaultValue' | 'onChange'
+  > & {
+    description?: ReactNode;
+    value: string;
+    onValueChange: (value: string) => void;
+    type?: 'text' | 'url' | 'tel' | 'color';
     autoComplete?: string;
     inputMode?: 'text' | 'tel' | 'url';
     maxLength?: number;
@@ -82,14 +108,22 @@ type TextFieldProps = FormFieldProps &
   };
 
 type TextAreaFieldProps = FormFieldProps &
-  Omit<ComponentPropsWithoutRef<'textarea'>, 'id' | 'name' | 'className' | 'required'> & {
-    defaultValue?: string;
+  Omit<
+    ComponentPropsWithoutRef<'textarea'>,
+    'id' | 'name' | 'className' | 'required' | 'value' | 'defaultValue' | 'onChange'
+  > & {
+    description?: ReactNode;
+    value: string;
+    onValueChange: (value: string) => void;
     rows?: number;
     maxLength?: number;
     spellCheck?: boolean;
   };
 
 type SelectFieldProps = FormFieldProps & {
+  description?: ReactNode;
+  value: string;
+  onValueChange: (value: string) => void;
   categoryLabels: Partial<Record<MerchantCategory, string>>;
 };
 
@@ -104,9 +138,43 @@ const selectClassName = `${inputClassName} pr-10`;
 const textAreaClassName = `${inputClassName} min-h-32 resize-y`;
 const labelClassName = 'block text-sm font-medium text-slate-700';
 const errorClassName = 'mt-2 text-sm text-rose-600';
+const helperClassName = 'mt-2 text-sm leading-6 text-slate-500';
 const bannerBaseClassName = 'rounded-2xl border px-4 py-3 text-sm';
 const primaryButtonClassName =
   'inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-60';
+
+function hasSlugWarning(slug: string): boolean {
+  const normalizedSlug = slug.toLowerCase();
+
+  return (
+    normalizedSlug.includes('http') ||
+    normalizedSlug.includes('/') ||
+    normalizedSlug.includes('.') ||
+    normalizedSlug.includes('www')
+  );
+}
+
+function getSlugHelpText(locale: Locale): string {
+  return locale === 'es'
+    ? 'Escribe solo un slug corto, no una URL completa.'
+    : 'Enter only a short slug, not a full URL.';
+}
+
+function getSlugPreviewLabel(locale: Locale): string {
+  return locale === 'es' ? 'Vista publica' : 'Public URL preview';
+}
+
+function getSlugWarningText(locale: Locale): string {
+  return locale === 'es'
+    ? 'El slug no debe contener http, /, . ni www.'
+    : 'The slug should not contain http, /, . or www.';
+}
+
+function getPublicMerchantPath(locale: Locale, slug: string): string {
+  const previewSlug = slug.trim() || 'slug';
+
+  return `/${locale}/m/${previewSlug}`;
+}
 
 function normalizeFieldErrorName(fieldName: string): FieldName | null {
   switch (fieldName) {
@@ -168,17 +236,24 @@ function FieldContainer({
   id,
   label,
   className,
+  description,
   error,
   children,
 }: FieldContainerProps): ReactNode {
   const errorId = error ? `${id}-error` : undefined;
+  const descriptionId = description ? `${id}-description` : undefined;
 
   return (
     <div className={className}>
       <label className={labelClassName} htmlFor={id}>
         {label}
       </label>
-      {children(errorId)}
+      {children({ descriptionId, errorId })}
+      {description ? (
+        <div className={helperClassName} id={descriptionId}>
+          {description}
+        </div>
+      ) : null}
       {error ? (
         <p className={errorClassName} id={errorId}>
           {error}
@@ -193,9 +268,11 @@ function TextField({
   name,
   label,
   className,
+  description,
   error,
   required,
-  defaultValue,
+  value,
+  onValueChange,
   type = 'text',
   autoComplete,
   inputMode,
@@ -204,24 +281,35 @@ function TextField({
   ...inputProps
 }: TextFieldProps): ReactNode {
   return (
-    <FieldContainer className={className} error={error} id={id} label={label}>
-      {(errorId) => (
-        <input
-          {...inputProps}
-          aria-describedby={errorId}
-          aria-invalid={Boolean(error)}
-          autoComplete={autoComplete}
-          className={inputClassName}
-          defaultValue={defaultValue}
-          id={id}
-          inputMode={inputMode}
-          maxLength={maxLength}
-          name={name}
-          required={required}
-          spellCheck={spellCheck}
-          type={type}
-        />
-      )}
+    <FieldContainer
+      className={className}
+      description={description}
+      error={error}
+      id={id}
+      label={label}
+    >
+      {({ descriptionId, errorId }) => {
+        const describedBy = [descriptionId, errorId].filter(Boolean).join(' ') || undefined;
+
+        return (
+          <input
+            {...inputProps}
+            aria-describedby={describedBy}
+            aria-invalid={Boolean(error)}
+            autoComplete={autoComplete}
+            className={inputClassName}
+            id={id}
+            inputMode={inputMode}
+            maxLength={maxLength}
+            name={name}
+            onChange={(event) => onValueChange(event.currentTarget.value)}
+            required={required}
+            spellCheck={spellCheck}
+            type={type}
+            value={value}
+          />
+        );
+      }}
     </FieldContainer>
   );
 }
@@ -231,31 +319,44 @@ function TextAreaField({
   name,
   label,
   className,
+  description,
   error,
   required,
-  defaultValue,
+  value,
+  onValueChange,
   rows = 4,
   maxLength,
   spellCheck,
   ...textareaProps
 }: TextAreaFieldProps): ReactNode {
   return (
-    <FieldContainer className={className} error={error} id={id} label={label}>
-      {(errorId) => (
-        <textarea
-          {...textareaProps}
-          aria-describedby={errorId}
-          aria-invalid={Boolean(error)}
-          className={textAreaClassName}
-          defaultValue={defaultValue}
-          id={id}
-          maxLength={maxLength}
-          name={name}
-          required={required}
-          rows={rows}
-          spellCheck={spellCheck}
-        />
-      )}
+    <FieldContainer
+      className={className}
+      description={description}
+      error={error}
+      id={id}
+      label={label}
+    >
+      {({ descriptionId, errorId }) => {
+        const describedBy = [descriptionId, errorId].filter(Boolean).join(' ') || undefined;
+
+        return (
+          <textarea
+            {...textareaProps}
+            aria-describedby={describedBy}
+            aria-invalid={Boolean(error)}
+            className={textAreaClassName}
+            id={id}
+            maxLength={maxLength}
+            name={name}
+            onChange={(event) => onValueChange(event.currentTarget.value)}
+            required={required}
+            rows={rows}
+            spellCheck={spellCheck}
+            value={value}
+          />
+        );
+      }}
     </FieldContainer>
   );
 }
@@ -265,32 +366,46 @@ function SelectField({
   name,
   label,
   className,
+  description,
   error,
   required,
+  value,
+  onValueChange,
   categoryLabels,
 }: SelectFieldProps): ReactNode {
   return (
-    <FieldContainer className={className} error={error} id={id} label={label}>
-      {(errorId) => (
-        <select
-          aria-describedby={errorId}
-          aria-invalid={Boolean(error)}
-          className={selectClassName}
-          defaultValue=""
-          id={id}
-          name={name}
-          required={required}
-        >
-          <option disabled value="">
-            {label}
-          </option>
-          {MERCHANT_CATEGORIES.map((category) => (
-            <option key={category} value={category}>
-              {getCategoryLabel(categoryLabels, category)}
+    <FieldContainer
+      className={className}
+      description={description}
+      error={error}
+      id={id}
+      label={label}
+    >
+      {({ descriptionId, errorId }) => {
+        const describedBy = [descriptionId, errorId].filter(Boolean).join(' ') || undefined;
+
+        return (
+          <select
+            aria-describedby={describedBy}
+            aria-invalid={Boolean(error)}
+            className={selectClassName}
+            id={id}
+            name={name}
+            onChange={(event) => onValueChange(event.currentTarget.value)}
+            required={required}
+            value={value}
+          >
+            <option disabled value="">
+              {label}
             </option>
-          ))}
-        </select>
-      )}
+            {MERCHANT_CATEGORIES.map((category) => (
+              <option key={category} value={category}>
+                {getCategoryLabel(categoryLabels, category)}
+              </option>
+            ))}
+          </select>
+        );
+      }}
     </FieldContainer>
   );
 }
@@ -329,6 +444,9 @@ export function OnboardingForm({ locale, copy }: OnboardingFormProps): ReactNode
       createMerchantProfile(locale, formData),
     null,
   );
+  const [formValues, setFormValues] = useState<MerchantFormValues>(() => ({
+    ...initialFormValues,
+  }));
 
   const router = useRouter();
 
@@ -339,6 +457,27 @@ export function OnboardingForm({ locale, copy }: OnboardingFormProps): ReactNode
   }, [router, state]);
 
   const fieldErrors = buildFieldErrorMap(state && !state.ok ? state.fieldErrors : undefined);
+  const slugDescription = (
+    <div className="space-y-1">
+      <p>{getSlugHelpText(locale)}</p>
+      <p className="text-slate-700">
+        {getSlugPreviewLabel(locale)}:{' '}
+        <code className="break-all font-mono text-slate-900">
+          {getPublicMerchantPath(locale, formValues.slug)}
+        </code>
+      </p>
+      {hasSlugWarning(formValues.slug) ? (
+        <p className="text-amber-700">{getSlugWarningText(locale)}</p>
+      ) : null}
+    </div>
+  );
+
+  function updateField(fieldName: FieldName, value: string): void {
+    setFormValues((currentValues) => ({
+      ...currentValues,
+      [fieldName]: value,
+    }));
+  }
 
   return (
     <section className="w-full rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
@@ -360,18 +499,23 @@ export function OnboardingForm({ locale, copy }: OnboardingFormProps): ReactNode
             label={copy.fields.name}
             maxLength={120}
             name="name"
+            onValueChange={(value) => updateField('name', value)}
             required
+            value={formValues.name}
           />
 
           <TextField
             autoComplete="off"
+            description={slugDescription}
             error={fieldErrors.slug?.[0]}
             id="merchant-slug"
             label={copy.fields.slug}
             maxLength={50}
             name="slug"
+            onValueChange={(value) => updateField('slug', value)}
             required
             spellCheck={false}
+            value={formValues.slug}
           />
 
           <SelectField
@@ -380,7 +524,9 @@ export function OnboardingForm({ locale, copy }: OnboardingFormProps): ReactNode
             id="merchant-category"
             label={copy.fields.category}
             name="category"
+            onValueChange={(value) => updateField('category', value)}
             required
+            value={formValues.category}
           />
 
           <TextField
@@ -389,6 +535,8 @@ export function OnboardingForm({ locale, copy }: OnboardingFormProps): ReactNode
             id="merchant-city"
             label={copy.fields.city}
             name="city"
+            onValueChange={(value) => updateField('city', value)}
+            value={formValues.city}
           />
 
           <TextAreaField
@@ -398,7 +546,9 @@ export function OnboardingForm({ locale, copy }: OnboardingFormProps): ReactNode
             label={copy.fields.description}
             maxLength={1000}
             name="description"
+            onValueChange={(value) => updateField('description', value)}
             rows={4}
+            value={formValues.description}
           />
 
           <TextField
@@ -409,7 +559,9 @@ export function OnboardingForm({ locale, copy }: OnboardingFormProps): ReactNode
             label={copy.fields.phone}
             maxLength={32}
             name="phone"
+            onValueChange={(value) => updateField('phone', value)}
             type="tel"
+            value={formValues.phone}
           />
 
           <TextField
@@ -420,7 +572,9 @@ export function OnboardingForm({ locale, copy }: OnboardingFormProps): ReactNode
             label={copy.fields.websiteUrl}
             maxLength={2048}
             name="websiteUrl"
+            onValueChange={(value) => updateField('websiteUrl', value)}
             type="url"
+            value={formValues.websiteUrl}
           />
 
           <TextField
@@ -430,6 +584,8 @@ export function OnboardingForm({ locale, copy }: OnboardingFormProps): ReactNode
             label={copy.fields.address}
             maxLength={255}
             name="address"
+            onValueChange={(value) => updateField('address', value)}
+            value={formValues.address}
           />
 
           <TextField
@@ -440,7 +596,9 @@ export function OnboardingForm({ locale, copy }: OnboardingFormProps): ReactNode
             label={copy.fields.bizumPhone}
             maxLength={32}
             name="bizumPhone"
+            onValueChange={(value) => updateField('bizumPhone', value)}
             type="tel"
+            value={formValues.bizumPhone}
           />
 
           <TextField
@@ -450,7 +608,9 @@ export function OnboardingForm({ locale, copy }: OnboardingFormProps): ReactNode
             label={copy.fields.bankIban}
             maxLength={34}
             name="bankIban"
+            onValueChange={(value) => updateField('bankIban', value)}
             spellCheck={false}
+            value={formValues.bankIban}
           />
 
           <TextField
@@ -458,9 +618,11 @@ export function OnboardingForm({ locale, copy }: OnboardingFormProps): ReactNode
             error={fieldErrors.brandColor?.[0]}
             id="merchant-brand-color"
             label={copy.fields.brandColor}
-            maxLength={7}
             name="brandColor"
+            onValueChange={(value) => updateField('brandColor', value)}
+            type="color"
             spellCheck={false}
+            value={formValues.brandColor}
           />
         </div>
 
