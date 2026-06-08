@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 
 import { isSupportedLocale } from '@/lib/i18n/config';
 import type { Locale } from '@/lib/i18n/config';
@@ -55,7 +56,7 @@ type PageCopy = {
 const PAGE_COPY: Record<Locale, PageCopy> = {
   es: {
     validity: (days) => `${days} días de validez`,
-    ctaLabel: 'Compra próximamente',
+    ctaLabel: 'Comprar',
     emptyState: 'Este negocio aún no tiene tarjetas regalo activas.',
     metaTitle: (merchantName, city) =>
       `${merchantName} — Tarjetas regalo en ${city} | ParaUsted`,
@@ -64,7 +65,7 @@ const PAGE_COPY: Record<Locale, PageCopy> = {
   },
   en: {
     validity: (days) => `${days} days validity`,
-    ctaLabel: 'Purchase coming soon',
+    ctaLabel: 'Buy now',
     emptyState: 'This business does not have active gift cards yet.',
     metaTitle: (merchantName, city) =>
       `${merchantName} — Gift cards in ${city} | ParaUsted`,
@@ -262,13 +263,12 @@ export default async function MerchantPublicPage({ params }: MerchantPageProps) 
                     )}
                     <p className="mt-2 text-base font-bold text-gray-900">{formatAmount(card)}</p>
                     <p className="mt-1 text-xs text-gray-400">{copy.validity(card.valid_days)}</p>
-                    <button
-                      type="button"
-                      disabled
-                      className="mt-4 w-full cursor-not-allowed rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-400"
+                    <Link
+                      href={`/${locale}/m/${merchant.slug}/gift-cards/${card.id}`}
+                      className="mt-4 block w-full rounded-md bg-slate-950 px-4 py-2 text-center text-sm font-medium text-white hover:bg-slate-800"
                     >
                       {copy.ctaLabel}
-                    </button>
+                    </Link>
                   </li>
                 );
               })}
