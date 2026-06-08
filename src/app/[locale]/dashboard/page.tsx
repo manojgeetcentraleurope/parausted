@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, getLocalizedPath, isSupportedLocale } from '@/lib/i18n/config';
@@ -8,6 +9,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { getAlternateLanguageUrls, getCanonicalUrl } from '@/lib/seo/metadata';
 import { OnboardingForm } from './onboarding-form';
 import type { OnboardingFormCopy } from './onboarding-form';
+import { LogoutButton } from './logout-button';
 
 type DashboardPageProps = {
   params: Promise<{ locale: string }>;
@@ -124,6 +126,35 @@ const SUMMARY_COPY = {
   },
 } as const;
 
+const ACTIONS_COPY: Record<
+  Locale,
+  {
+    viewPublicPage: string;
+    home: string;
+    createFirstGiftCard: string;
+    comingSoon: string;
+    logout: string;
+    signingOut: string;
+  }
+> = {
+  es: {
+    viewPublicPage: 'Ver página pública',
+    home: 'Inicio',
+    createFirstGiftCard: 'Crear primera tarjeta regalo',
+    comingSoon: 'Próximamente',
+    logout: 'Cerrar sesión',
+    signingOut: 'Cerrando sesión…',
+  },
+  en: {
+    viewPublicPage: 'View public page',
+    home: 'Home',
+    createFirstGiftCard: 'Create first gift card',
+    comingSoon: 'Coming soon',
+    logout: 'Log out',
+    signingOut: 'Signing out…',
+  },
+};
+
 function getResolvedLocale(locale: string): Locale {
   return isSupportedLocale(locale) ? locale : DEFAULT_LOCALE;
 }
@@ -189,6 +220,9 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
   }
 
   const summaryCopy = SUMMARY_COPY[locale];
+  const actionsCopy = ACTIONS_COPY[locale];
+  const publicPagePath = getLocalizedPath(`/m/${merchant.slug}`, locale);
+  const homePath = getLocalizedPath('/', locale);
   const categoryLabel = summaryCopy.categories[merchant.category] ?? merchant.category;
   const statusLabel = summaryCopy.status[merchant.status] ?? merchant.status;
 
@@ -206,7 +240,14 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
           <dl className="mt-8 grid gap-5 sm:grid-cols-2">
             <div className="rounded-2xl bg-slate-50 p-5">
               <dt className="text-sm font-medium text-slate-500">{summaryCopy.slugLabel}</dt>
-              <dd className="mt-2 break-all text-base font-medium text-slate-900">/{merchant.slug}</dd>
+              <dd className="mt-2 break-all text-base font-medium text-cyan-800">
+                <Link
+                  className="inline-flex items-center rounded-lg outline-none transition hover:text-cyan-900 focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2"
+                  href={publicPagePath}
+                >
+                  {publicPagePath}
+                </Link>
+              </dd>
             </div>
 
             <div className="rounded-2xl bg-slate-50 p-5">
@@ -227,6 +268,47 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
 
           <div className="mt-6 rounded-2xl border border-cyan-100 bg-cyan-50 p-5">
             <p className="text-sm font-medium text-cyan-900">{summaryCopy.nextStep}</p>
+          </div>
+
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <Link
+              className="flex min-h-28 flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50 p-5 transition hover:border-cyan-200 hover:bg-cyan-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2"
+              href={publicPagePath}
+            >
+              <span className="text-sm font-medium text-slate-500">{actionsCopy.viewPublicPage}</span>
+              <span className="mt-4 break-all text-sm font-semibold text-slate-900">{publicPagePath}</span>
+            </Link>
+
+            <Link
+              className="flex min-h-28 flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50 p-5 transition hover:border-cyan-200 hover:bg-cyan-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2"
+              href={homePath}
+            >
+              <span className="text-sm font-medium text-slate-500">{actionsCopy.home}</span>
+              <span className="mt-4 text-sm font-semibold text-slate-900">{homePath}</span>
+            </Link>
+
+            <div className="flex min-h-28 flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <div>
+                <span className="text-sm font-medium text-slate-500">{actionsCopy.createFirstGiftCard}</span>
+                <span className="mt-2 block text-sm text-slate-500">{actionsCopy.comingSoon}</span>
+              </div>
+              <button
+                className="mt-4 inline-flex cursor-not-allowed items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-400"
+                disabled
+                type="button"
+              >
+                {actionsCopy.comingSoon}
+              </button>
+            </div>
+
+            <div className="flex min-h-28 flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <span className="text-sm font-medium text-slate-500">{actionsCopy.logout}</span>
+              <LogoutButton
+                label={actionsCopy.logout}
+                locale={locale}
+                signingOutLabel={actionsCopy.signingOut}
+              />
+            </div>
           </div>
         </section>
       </div>
