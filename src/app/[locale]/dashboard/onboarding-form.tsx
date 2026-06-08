@@ -19,6 +19,7 @@ type FieldName =
   | 'slug'
   | 'category'
   | 'description'
+  | 'descriptionEn'
   | 'phone'
   | 'websiteUrl'
   | 'address'
@@ -38,6 +39,7 @@ const initialFormValues: MerchantFormValues = {
   slug: '',
   category: '',
   description: '',
+  descriptionEn: '',
   phone: '',
   websiteUrl: '',
   address: '',
@@ -55,6 +57,7 @@ export type OnboardingFormCopy = {
     slug: string;
     category: string;
     description: string;
+    descriptionEn: string;
     phone: string;
     websiteUrl: string;
     address: string;
@@ -182,6 +185,7 @@ function normalizeFieldErrorName(fieldName: string): FieldName | null {
     case 'slug':
     case 'category':
     case 'description':
+    case 'descriptionEn':
     case 'phone':
     case 'websiteUrl':
     case 'address':
@@ -549,6 +553,18 @@ export function OnboardingForm({ locale, copy }: OnboardingFormProps): ReactNode
             onValueChange={(value) => updateField('description', value)}
             rows={4}
             value={formValues.description}
+          />
+
+          <TextAreaField
+            className="md:col-span-2"
+            error={fieldErrors.descriptionEn?.[0]}
+            id="merchant-description-en"
+            label={copy.fields.descriptionEn}
+            maxLength={1000}
+            name="descriptionEn"
+            onValueChange={(value) => updateField('descriptionEn', value)}
+            rows={4}
+            value={formValues.descriptionEn}
           />
 
           <TextField

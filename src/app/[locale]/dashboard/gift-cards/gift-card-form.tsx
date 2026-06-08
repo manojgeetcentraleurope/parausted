@@ -24,7 +24,9 @@ export type GiftCardFormCopy = {
   fields: {
     cardType: string;
     title: string;
+    titleEn: string;
     description: string;
+    descriptionEn: string;
     amount: string;
     minAmount: string;
     maxAmount: string;
@@ -57,7 +59,9 @@ type Props = {
 export type GiftCardFormValues = {
   cardType: GiftCardType;
   title: string;
+  titleEn: string;
   description: string;
+  descriptionEn: string;
   amount: string;
   minAmount: string;
   maxAmount: string;
@@ -72,7 +76,9 @@ export type GiftCardFormValues = {
 const DEFAULT_FORM_VALUES: GiftCardFormValues = {
   cardType: 'fixed_value',
   title: '',
+  titleEn: '',
   description: '',
+  descriptionEn: '',
   amount: '',
   minAmount: '',
   maxAmount: '',
@@ -265,6 +271,58 @@ export function GiftCardForm({
           {fieldErrors['description'] !== undefined && (
             <p id="description-error" role="alert" className={ERROR_CLASSES}>
               {fieldErrors['description'].join(' ')}
+            </p>
+          )}
+        </div>
+
+        {/* ---------------------------------------------------------------- */}
+        {/* English title (optional)                                          */}
+        {/* ---------------------------------------------------------------- */}
+        <div>
+          <label htmlFor="titleEn" className={LABEL_CLASSES}>
+            {copy.fields.titleEn}
+          </label>
+          <input
+            id="titleEn"
+            name="titleEn"
+            type="text"
+            value={formValues.titleEn}
+            onChange={(e) => handleChange('titleEn', e.target.value)}
+            aria-describedby={
+              fieldErrors['titleEn'] !== undefined ? 'titleEn-error' : undefined
+            }
+            className={INPUT_CLASSES}
+          />
+          {fieldErrors['titleEn'] !== undefined && (
+            <p id="titleEn-error" role="alert" className={ERROR_CLASSES}>
+              {fieldErrors['titleEn'].join(' ')}
+            </p>
+          )}
+        </div>
+
+        {/* ---------------------------------------------------------------- */}
+        {/* English description (optional)                                    */}
+        {/* ---------------------------------------------------------------- */}
+        <div>
+          <label htmlFor="descriptionEn" className={LABEL_CLASSES}>
+            {copy.fields.descriptionEn}
+          </label>
+          <textarea
+            id="descriptionEn"
+            name="descriptionEn"
+            value={formValues.descriptionEn}
+            onChange={(e) => handleChange('descriptionEn', e.target.value)}
+            rows={3}
+            aria-describedby={
+              fieldErrors['descriptionEn'] !== undefined
+                ? 'descriptionEn-error'
+                : undefined
+            }
+            className={INPUT_CLASSES}
+          />
+          {fieldErrors['descriptionEn'] !== undefined && (
+            <p id="descriptionEn-error" role="alert" className={ERROR_CLASSES}>
+              {fieldErrors['descriptionEn'].join(' ')}
             </p>
           )}
         </div>

@@ -18,6 +18,7 @@ type MerchantRow = {
   slug: string;
   category: string;
   description: string | null;
+  description_en: string | null;
   website_url: string | null;
   city: string;
 };
@@ -26,7 +27,9 @@ type GiftCardRow = {
   id: string;
   card_type: GiftCardType;
   title: string;
+  title_en: string | null;
   description: string | null;
+  description_en: string | null;
   amount_cents: number | null;
   min_amount_cents: number | null;
   max_amount_cents: number | null;
@@ -90,7 +93,7 @@ async function getMerchant(slug: string): Promise<MerchantRow | null> {
 
   const { data, error } = await supabase
     .from('merchants')
-    .select('id, name, slug, category, description, website_url, city')
+    .select('id, name, slug, category, description, description_en, website_url, city')
     .eq('slug', slug)
     .eq('status', 'active')
     .single();
@@ -108,7 +111,7 @@ async function getGiftCards(merchantId: string): Promise<GiftCardRow[]> {
   const { data, error } = await supabase
     .from('gift_cards')
     .select(
-      'id, card_type, title, description, amount_cents, min_amount_cents, max_amount_cents, valid_days',
+      'id, card_type, title, title_en, description, description_en, amount_cents, min_amount_cents, max_amount_cents, valid_days',
     )
     .eq('merchant_id', merchantId)
     .eq('active', true)
@@ -201,6 +204,11 @@ export default async function MerchantPublicPage({ params }: MerchantPageProps) 
   const giftCards = await getGiftCards(merchant.id);
   const copy = PAGE_COPY[locale];
 
+  const displayMerchantDescription =
+    locale === 'en' && merchant.description_en
+      ? merchant.description_en
+      : merchant.description;
+
   return (
     <main className="min-h-screen bg-white px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-2xl">
@@ -210,8 +218,8 @@ export default async function MerchantPublicPage({ params }: MerchantPageProps) 
         {/* Merchant header */}
         <h1 className="mt-1 text-3xl font-bold text-gray-900">{merchant.name}</h1>
 
-        {merchant.description !== null && (
-          <p className="mt-3 text-gray-600">{merchant.description}</p>
+        {displayMerchantDescription !== null && (
+          <p className="mt-3 text-gray-600">{displayMerchantDescription}</p>
         )}
 
         <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-gray-500">
@@ -235,26 +243,35 @@ export default async function MerchantPublicPage({ params }: MerchantPageProps) 
             <p className="text-gray-500">{copy.emptyState}</p>
           ) : (
             <ul className="space-y-4">
-              {giftCards.map((card) => (
-                <li key={card.id} className="rounded-lg border border-gray-200 p-5">
-                  <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
-                    {CARD_TYPE_LABEL[card.card_type][locale]}
-                  </p>
-                  <h2 className="mt-1 text-lg font-semibold text-gray-900">{card.title}</h2>
-                  {card.description !== null && (
-                    <p className="mt-1 text-sm text-gray-600">{card.description}</p>
-                  )}
-                  <p className="mt-2 text-base font-bold text-gray-900">{formatAmount(card)}</p>
-                  <p className="mt-1 text-xs text-gray-400">{copy.validity(card.valid_days)}</p>
-                  <button
-                    type="button"
-                    disabled
-                    className="mt-4 w-full cursor-not-allowed rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-400"
-                  >
-                    {copy.ctaLabel}
-                  </button>
-                </li>
-              ))}
+              {giftCards.map((card) => {
+                const displayTitle =
+                  locale === 'en' && card.title_en ? card.title_en : card.title;
+                const displayDescription =
+                  locale === 'en' && card.description_en
+                    ? card.description_en
+                    : card.description;
+
+                return (
+                  <li key={card.id} className="rounded-lg border border-gray-200 p-5">
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                      {CARD_TYPE_LABEL[card.card_type][locale]}
+                    </p>
+                    <h2 className="mt-1 text-lg font-semibold text-gray-900">{displayTitle}</h2>
+                    {displayDescription !== null && (
+                      <p className="mt-1 text-sm text-gray-600">{displayDescription}</p>
+                    )}
+                    <p className="mt-2 text-base font-bold text-gray-900">{formatAmount(card)}</p>
+                    <p className="mt-1 text-xs text-gray-400">{copy.validity(card.valid_days)}</p>
+                    <button
+                      type="button"
+                      disabled
+                      className="mt-4 w-full cursor-not-allowed rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-400"
+                    >
+                      {copy.ctaLabel}
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>

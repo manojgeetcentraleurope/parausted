@@ -36,7 +36,9 @@ type GiftCardListItem = {
   id: string;
   card_type: GiftCardType;
   title: string;
+  title_en: string | null;
   description: string | null;
+  description_en: string | null;
   amount_cents: number | null;
   min_amount_cents: number | null;
   max_amount_cents: number | null;
@@ -68,7 +70,9 @@ function mapGiftCardToFormValues(card: GiftCardListItem): GiftCardFormValues {
   return {
     cardType: card.card_type,
     title: card.title,
+    titleEn: card.title_en ?? '',
     description: card.description ?? '',
+    descriptionEn: card.description_en ?? '',
     amount: card.amount_cents !== null ? centsToEuros(card.amount_cents) : '',
     minAmount: card.min_amount_cents !== null ? centsToEuros(card.min_amount_cents) : '',
     maxAmount: card.max_amount_cents !== null ? centsToEuros(card.max_amount_cents) : '',

@@ -70,7 +70,9 @@ const giftCardBaseSchema = z
   .object({
     cardType: z.enum(GIFT_CARD_TYPES),
     title: z.string().trim().min(1, 'Title is required').max(120),
+    titleEn: createOptionalTextSchema(120),
     description: createOptionalTextSchema(1000),
+    descriptionEn: createOptionalTextSchema(1000),
     amount: createOptionalEuroAmountSchema('Amount'),
     minAmount: createOptionalEuroAmountSchema('Minimum amount'),
     maxAmount: createOptionalEuroAmountSchema('Maximum amount'),
@@ -151,7 +153,9 @@ const giftCardBaseSchema = z
       return {
         card_type: value.cardType,
         title: value.title,
+        title_en: value.titleEn,
         description: value.description,
+        description_en: value.descriptionEn,
         amount_cents: undefined,
         min_amount_cents: value.minAmount,
         max_amount_cents: value.maxAmount,
@@ -163,7 +167,9 @@ const giftCardBaseSchema = z
     return {
       card_type: value.cardType,
       title: value.title,
+      title_en: value.titleEn,
       description: value.description,
+      description_en: value.descriptionEn,
       amount_cents: value.amount,
       min_amount_cents: undefined,
       max_amount_cents: undefined,

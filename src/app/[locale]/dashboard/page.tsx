@@ -30,7 +30,9 @@ type GiftCardRow = {
   id: string;
   card_type: GiftCardType;
   title: string;
+  title_en: string | null;
   description: string | null;
+  description_en: string | null;
   amount_cents: number | null;
   min_amount_cents: number | null;
   max_amount_cents: number | null;
@@ -51,6 +53,7 @@ const ONBOARDING_COPY: Record<Locale, OnboardingFormCopy> = {
       slug: 'URL pública (ej: mi-barberia)',
       category: 'Categoría',
       description: 'Descripción',
+      descriptionEn: 'Descripción en inglés (opcional)',
       phone: 'Teléfono',
       websiteUrl: 'Sitio web',
       address: 'Dirección',
@@ -79,6 +82,7 @@ const ONBOARDING_COPY: Record<Locale, OnboardingFormCopy> = {
       slug: 'Public URL (e.g. my-barbershop)',
       category: 'Category',
       description: 'Description',
+      descriptionEn: 'English description (optional)',
       phone: 'Phone',
       websiteUrl: 'Website',
       address: 'Address',
@@ -194,6 +198,8 @@ const GIFT_CARD_COPY: Record<Locale, GiftCardSectionCopy> = {
         cardType: 'Tipo',
         title: 'Título',
         description: 'Descripción',
+        titleEn: 'Título en inglés (opcional)',
+        descriptionEn: 'Descripción en inglés (opcional)',
         amount: 'Importe',
         minAmount: 'Importe mínimo',
         maxAmount: 'Importe máximo',
@@ -234,6 +240,8 @@ const GIFT_CARD_COPY: Record<Locale, GiftCardSectionCopy> = {
         cardType: 'Type',
         title: 'Title',
         description: 'Description',
+        titleEn: 'English title (optional)',
+        descriptionEn: 'English description (optional)',
         amount: 'Amount',
         minAmount: 'Min amount',
         maxAmount: 'Max amount',
@@ -326,7 +334,7 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
 
   const { data: giftCardsRaw } = await supabase
     .from('gift_cards')
-    .select('id, card_type, title, description, amount_cents, min_amount_cents, max_amount_cents, valid_days, active')
+    .select('id, card_type, title, title_en, description, description_en, amount_cents, min_amount_cents, max_amount_cents, valid_days, active')
     .eq('merchant_id', merchant.id)
     .order('created_at', { ascending: false });
 

@@ -123,6 +123,7 @@ export const merchantOnboardingSchema = z
     slug: merchantSlugSchema,
     category: merchantCategorySchema,
     description: createOptionalTextSchema(1000),
+    descriptionEn: createOptionalTextSchema(1000),
     phone: createOptionalTextSchema(32),
     website_url: optionalWebsiteUrlSchema,
     address: createOptionalTextSchema(255),

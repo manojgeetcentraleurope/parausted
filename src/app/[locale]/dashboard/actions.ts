@@ -54,19 +54,26 @@ function getMsg(
   return FALLBACK_MESSAGES[locale];
 }
 
+function getOptionalFormString(formData: FormData, key: string): string | undefined {
+  const value = formData.get(key);
+
+  return typeof value === 'string' ? value : undefined;
+}
+
 function extractFormFields(formData: FormData): Record<string, unknown> {
   return {
-    name: formData.get('name'),
-    slug: formData.get('slug'),
-    category: formData.get('category'),
-    description: formData.get('description'),
-    phone: formData.get('phone'),
-    website_url: formData.get('websiteUrl'),
-    address: formData.get('address'),
-    city: formData.get('city'),
-    bizum_phone: formData.get('bizumPhone'),
-    bank_iban: formData.get('bankIban'),
-    brand_color: formData.get('brandColor'),
+    name: getOptionalFormString(formData, 'name'),
+    slug: getOptionalFormString(formData, 'slug'),
+    category: getOptionalFormString(formData, 'category'),
+    description: getOptionalFormString(formData, 'description'),
+    descriptionEn: getOptionalFormString(formData, 'descriptionEn'),
+    phone: getOptionalFormString(formData, 'phone'),
+    website_url: getOptionalFormString(formData, 'websiteUrl'),
+    address: getOptionalFormString(formData, 'address'),
+    city: getOptionalFormString(formData, 'city'),
+    bizum_phone: getOptionalFormString(formData, 'bizumPhone'),
+    bank_iban: getOptionalFormString(formData, 'bankIban'),
+    brand_color: getOptionalFormString(formData, 'brandColor'),
   };
 }
 
@@ -151,6 +158,7 @@ export async function createMerchantProfile(
     slug,
     category: validated.category,
     description: validated.description ?? null,
+    description_en: validated.descriptionEn ?? null,
     phone: validated.phone ?? null,
     website_url: validated.website_url ?? null,
     address: validated.address ?? null,
