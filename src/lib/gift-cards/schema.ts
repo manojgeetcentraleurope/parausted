@@ -45,6 +45,27 @@ function createOptionalEuroAmountSchema(fieldLabel: string) {
     });
 }
 
+const validDaysSchema = z.preprocess((value) => {
+  if (typeof value === 'string') {
+    const trimmedValue = value.trim();
+    return trimmedValue.length === 0 ? 365 : Number(trimmedValue);
+  }
+
+  return value ?? 365;
+}, z.number().int().min(365).max(3650));
+
+const activeSchema = z.preprocess((value) => {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    return ['1', 'true', 'on', 'yes'].includes(value.trim().toLowerCase());
+  }
+
+  return true;
+}, z.boolean());
+
 const giftCardBaseSchema = z
   .object({
     cardType: z.enum(GIFT_CARD_TYPES),
@@ -53,8 +74,8 @@ const giftCardBaseSchema = z
     amount: createOptionalEuroAmountSchema('Amount'),
     minAmount: createOptionalEuroAmountSchema('Minimum amount'),
     maxAmount: createOptionalEuroAmountSchema('Maximum amount'),
-    validDays: z.number().int().min(365).max(3650).default(365),
-    active: z.boolean().default(true),
+    validDays: validDaysSchema,
+    active: activeSchema,
   })
   .strict()
   .superRefine((value, ctx) => {
