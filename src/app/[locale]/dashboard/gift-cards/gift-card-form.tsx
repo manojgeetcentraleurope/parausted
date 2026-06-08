@@ -1,11 +1,17 @@
 'use client';
 
-import { useActionState, useCallback, useState } from 'react';
+import { useActionState, useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 import { GIFT_CARD_TYPES, type GiftCardType } from '@/lib/gift-cards/schema';
 import type { Locale } from '@/lib/i18n/config';
 
-import { createGiftCard, type CreateGiftCardResult } from './actions';
+import {
+  createGiftCard,
+  updateGiftCard,
+  type CreateGiftCardResult,
+  type UpdateGiftCardResult,
+} from './actions';
 
 // ---------------------------------------------------------------------------
 // Copy shape
@@ -13,6 +19,7 @@ import { createGiftCard, type CreateGiftCardResult } from './actions';
 
 export type GiftCardFormCopy = {
   title: string;
+  editTitle: string;
   description: string;
   fields: {
     cardType: string;
@@ -28,6 +35,10 @@ export type GiftCardFormCopy = {
   submit: string;
   submitting: string;
   success: string;
+  editSubmit: string;
+  editSubmitting: string;
+  editSuccess: string;
+  cancelEdit: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -37,9 +48,13 @@ export type GiftCardFormCopy = {
 type Props = {
   locale: Locale;
   copy: GiftCardFormCopy;
+  mode?: 'create' | 'edit';
+  giftCardId?: string;
+  initialValues?: Partial<GiftCardFormValues>;
+  onCancelEdit?: () => void;
 };
 
-type FormValues = {
+export type GiftCardFormValues = {
   cardType: GiftCardType;
   title: string;
   description: string;
@@ -54,7 +69,7 @@ type FormValues = {
 // Constants
 // ---------------------------------------------------------------------------
 
-const DEFAULT_FORM_VALUES: FormValues = {
+const DEFAULT_FORM_VALUES: GiftCardFormValues = {
   cardType: 'fixed_value',
   title: '',
   description: '',
@@ -75,29 +90,63 @@ const LABEL_CLASSES = 'block text-sm font-medium text-gray-700';
 const ERROR_CLASSES = 'mt-1 text-xs text-red-600';
 const HINT_CLASSES = 'mt-1 text-xs text-gray-500';
 
+function buildInitialFormValues(
+  initialValues?: Partial<GiftCardFormValues>,
+): GiftCardFormValues {
+  return {
+    ...DEFAULT_FORM_VALUES,
+    ...initialValues,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export function GiftCardForm({ locale, copy }: Props) {
-  const [formValues, setFormValues] = useState<FormValues>(DEFAULT_FORM_VALUES);
+export function GiftCardForm({
+  locale,
+  copy,
+  mode = 'create',
+  giftCardId,
+  initialValues,
+  onCancelEdit,
+}: Props) {
+  const router = useRouter();
+  const resolvedGiftCardId = typeof giftCardId === 'string' ? giftCardId.trim() : '';
+  const isEditMode = mode === 'edit' && resolvedGiftCardId.length > 0;
+  const [formValues, setFormValues] = useState<GiftCardFormValues>(() =>
+    buildInitialFormValues(initialValues),
+  );
 
   const action = useCallback(
     (
-      _prevState: CreateGiftCardResult | null,
+      _prevState: CreateGiftCardResult | UpdateGiftCardResult | null,
       formData: FormData,
-    ): Promise<CreateGiftCardResult> => createGiftCard(locale, formData),
-    [locale],
+    ): Promise<CreateGiftCardResult | UpdateGiftCardResult> =>
+      isEditMode
+        ? updateGiftCard(locale, resolvedGiftCardId, formData)
+        : createGiftCard(locale, formData),
+    [isEditMode, locale, resolvedGiftCardId],
   );
 
   const [state, formAction, isPending] = useActionState<
-    CreateGiftCardResult | null,
+    CreateGiftCardResult | UpdateGiftCardResult | null,
     FormData
   >(action, null);
 
-  function handleChange<K extends keyof FormValues>(
+  const isSuccess = state?.ok === true;
+
+  useEffect(() => {
+    if (!isSuccess) {
+      return;
+    }
+
+    router.refresh();
+  }, [isEditMode, isSuccess, router]);
+
+  function handleChange<K extends keyof GiftCardFormValues>(
     field: K,
-    value: FormValues[K],
+    value: GiftCardFormValues[K],
   ): void {
     setFormValues((prev) => ({ ...prev, [field]: value }));
   }
@@ -106,7 +155,10 @@ export function GiftCardForm({ locale, copy }: Props) {
   const fieldErrors: Record<string, string[] | undefined> =
     state?.ok === false ? (state.fieldErrors ?? {}) : {};
   const generalError = state?.ok === false ? state.message : null;
-  const isSuccess = state?.ok === true;
+  const heading = isEditMode ? copy.editTitle : copy.title;
+  const submitLabel = isEditMode ? copy.editSubmit : copy.submit;
+  const submittingLabel = isEditMode ? copy.editSubmitting : copy.submitting;
+  const successLabel = isEditMode ? copy.editSuccess : copy.success;
 
   const showAmountField =
     formValues.cardType === 'fixed_value' || formValues.cardType === 'service';
@@ -115,7 +167,7 @@ export function GiftCardForm({ locale, copy }: Props) {
   return (
     <section className="w-full max-w-lg space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-gray-900">{copy.title}</h2>
+        <h2 className="text-xl font-semibold text-gray-900">{heading}</h2>
         {copy.description && (
           <p className="mt-1 text-sm text-gray-600">{copy.description}</p>
         )}
@@ -126,7 +178,7 @@ export function GiftCardForm({ locale, copy }: Props) {
           role="alert"
           className="rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-800"
         >
-          {copy.success}
+          {successLabel}
         </div>
       )}
 
@@ -404,13 +456,30 @@ export function GiftCardForm({ locale, copy }: Props) {
         {/* ---------------------------------------------------------------- */}
         {/* Submit                                                            */}
         {/* ---------------------------------------------------------------- */}
-        <button
-          type="submit"
-          disabled={isPending}
-          className="w-full rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {isPending ? copy.submitting : copy.submit}
-        </button>
+        <div className={isEditMode ? 'flex flex-col gap-3 sm:flex-row' : undefined}>
+          {isEditMode && onCancelEdit !== undefined ? (
+            <button
+              type="button"
+              onClick={onCancelEdit}
+              disabled={isPending}
+              className="w-full rounded-md border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            >
+              {copy.cancelEdit}
+            </button>
+          ) : null}
+
+          <button
+            type="submit"
+            disabled={isPending}
+            className={
+              isEditMode
+                ? 'w-full flex-1 rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
+                : 'w-full rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
+            }
+          >
+            {isPending ? submittingLabel : submitLabel}
+          </button>
+        </div>
       </form>
     </section>
   );
