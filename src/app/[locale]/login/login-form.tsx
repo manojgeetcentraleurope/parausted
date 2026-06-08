@@ -1,7 +1,10 @@
 'use client';
 
+
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState, type FormEvent, type ReactNode } from 'react';
+
 
 import type { Messages } from '@/lib/i18n/messages';
 import { supabaseBrowserClient } from '@/lib/supabase/client';
@@ -53,6 +56,7 @@ export function LoginForm({ messages, nextPath, signupPath }: LoginFormProps) {
   const isLoading = loadingAction !== null;
   const passwordLoginDisabled = isLoading || normalizedEmail.length === 0 || password.length === 0;
   const magicLinkDisabled = isLoading || normalizedEmail.length === 0;
+  const router = useRouter();
 
   async function handlePasswordLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -76,7 +80,10 @@ export function LoginForm({ messages, nextPath, signupPath }: LoginFormProps) {
         return;
       }
 
-      window.location.assign(nextPath);
+      
+router.push(nextPath);
+router.refresh();
+
     } catch {
       setFeedback({ kind: 'error', message: messages.auth.genericError });
     } finally {

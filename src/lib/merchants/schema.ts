@@ -16,6 +16,7 @@ export type MerchantCategory = (typeof MERCHANT_CATEGORIES)[number];
 const MERCHANT_SLUG_PATTERN = /^[a-z0-9-]+$/;
 const MERCHANT_COLOR_PATTERN = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 const IBAN_PATTERN = /^[A-Z]{2}[0-9A-Z]{13,32}$/;
+const URL_LIKE_SLUG_PATTERN = /:\/\/|^www\.|[/.]/i;
 
 function normalizeText(value: string | undefined, fallback: string): string {
   const trimmed = value?.trim();
@@ -45,6 +46,10 @@ function isValidWebsiteUrl(value: string): boolean {
   }
 }
 
+function isUrlLikeSlug(value: string): boolean {
+  return URL_LIKE_SLUG_PATTERN.test(value.trim());
+}
+
 function isValidMerchantSlug(value: string): boolean {
   return (
     value.length >= 3 &&
@@ -62,6 +67,10 @@ const merchantCategorySchema = z
 const merchantSlugSchema = z
   .string()
   .trim()
+  .refine((value) => !isUrlLikeSlug(value), {
+    message:
+      'Enter only the short public URL name, such as seville-tours. Do not paste a full website URL.',
+  })
   .transform((value) => sanitizeMerchantSlug(value))
   .refine(isValidMerchantSlug, {
     message:
