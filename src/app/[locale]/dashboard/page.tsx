@@ -7,8 +7,12 @@ import type { Locale } from '@/lib/i18n/config';
 import { getMessages } from '@/lib/i18n/messages';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { getAlternateLanguageUrls, getCanonicalUrl } from '@/lib/seo/metadata';
+import { centsToEuros } from '@/lib/gift-cards/money';
+import type { GiftCardType } from '@/lib/gift-cards/schema';
 import { OnboardingForm } from './onboarding-form';
 import type { OnboardingFormCopy } from './onboarding-form';
+import { GiftCardForm } from './gift-cards/gift-card-form';
+import type { GiftCardFormCopy } from './gift-cards/gift-card-form';
 import { LogoutButton } from './logout-button';
 
 type DashboardPageProps = {
@@ -22,6 +26,17 @@ type MerchantRow = {
   category: string;
   city: string;
   status: string;
+};
+
+type GiftCardRow = {
+  id: string;
+  card_type: GiftCardType;
+  title: string;
+  amount_cents: number | null;
+  min_amount_cents: number | null;
+  max_amount_cents: number | null;
+  valid_days: number;
+  active: boolean;
 };
 
 // ---------------------------------------------------------------------------
@@ -155,8 +170,91 @@ const ACTIONS_COPY: Record<
   },
 };
 
+// ---------------------------------------------------------------------------
+// Local copy — gift card section labels
+// ---------------------------------------------------------------------------
+
+type GiftCardSectionCopy = {
+  sectionTitle: string;
+  emptyState: string;
+  validityLabel: string;
+  activeLabel: string;
+  inactiveLabel: string;
+  form: GiftCardFormCopy;
+};
+
+const GIFT_CARD_COPY: Record<Locale, GiftCardSectionCopy> = {
+  es: {
+    sectionTitle: 'Tarjetas regalo',
+    emptyState: 'Aún no has creado tarjetas regalo.',
+    validityLabel: 'días de validez',
+    activeLabel: 'Activa',
+    inactiveLabel: 'Inactiva',
+    form: {
+      title: 'Crear tarjeta regalo',
+      description: 'Define una tarjeta regalo para vender en tu página pública.',
+      fields: {
+        cardType: 'Tipo',
+        title: 'Título',
+        description: 'Descripción',
+        amount: 'Importe',
+        minAmount: 'Importe mínimo',
+        maxAmount: 'Importe máximo',
+        validDays: 'Validez en días',
+        active: 'Activa',
+      },
+      typeLabels: {
+        fixed_value: 'Valor fijo',
+        custom_value: 'Valor personalizado',
+        service: 'Servicio',
+      },
+      submit: 'Crear tarjeta',
+      submitting: 'Creando…',
+      success: 'Tarjeta regalo creada correctamente.',
+    },
+  },
+  en: {
+    sectionTitle: 'Gift cards',
+    emptyState: 'You have not created any gift cards yet.',
+    validityLabel: 'days validity',
+    activeLabel: 'Active',
+    inactiveLabel: 'Inactive',
+    form: {
+      title: 'Create gift card',
+      description: 'Define a gift card to sell on your public page.',
+      fields: {
+        cardType: 'Type',
+        title: 'Title',
+        description: 'Description',
+        amount: 'Amount',
+        minAmount: 'Min amount',
+        maxAmount: 'Max amount',
+        validDays: 'Validity days',
+        active: 'Active',
+      },
+      typeLabels: {
+        fixed_value: 'Fixed value',
+        custom_value: 'Custom value',
+        service: 'Service',
+      },
+      submit: 'Create card',
+      submitting: 'Creating…',
+      success: 'Gift card created successfully.',
+    },
+  },
+};
+
 function getResolvedLocale(locale: string): Locale {
   return isSupportedLocale(locale) ? locale : DEFAULT_LOCALE;
+}
+
+function formatGiftCardAmount(card: GiftCardRow): string {
+  if (card.card_type === 'custom_value') {
+    const min = card.min_amount_cents !== null ? `€${centsToEuros(card.min_amount_cents)}` : '—';
+    const max = card.max_amount_cents !== null ? `€${centsToEuros(card.max_amount_cents)}` : '—';
+    return `${min} – ${max}`;
+  }
+  return card.amount_cents !== null ? `€${centsToEuros(card.amount_cents)}` : '—';
 }
 
 export function generateStaticParams(): Array<{ locale: string }> {
@@ -221,6 +319,16 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
 
   const summaryCopy = SUMMARY_COPY[locale];
   const actionsCopy = ACTIONS_COPY[locale];
+  const giftCardCopy = GIFT_CARD_COPY[locale];
+
+  const { data: giftCardsRaw } = await supabase
+    .from('gift_cards')
+    .select('id, card_type, title, amount_cents, min_amount_cents, max_amount_cents, valid_days, active')
+    .eq('merchant_id', merchant.id)
+    .order('created_at', { ascending: false });
+
+  const giftCards = (giftCardsRaw ?? []) as GiftCardRow[];
+
   const publicPagePath = getLocalizedPath(`/m/${merchant.slug}`, locale);
   const homePath = getLocalizedPath('/', locale);
   const categoryLabel = summaryCopy.categories[merchant.category] ?? merchant.category;
@@ -228,7 +336,7 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
 
   return (
     <main className="min-h-screen bg-slate-50 px-6 py-10 text-slate-900">
-      <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-4xl items-center">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
         <section className="w-full rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
           <p className="text-sm font-semibold uppercase tracking-[0.35em] text-cyan-700">
             {messages.common.appName}
@@ -310,6 +418,46 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
               />
             </div>
           </div>
+        </section>
+
+        <section className="w-full rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
+          <h2 className="text-xl font-semibold tracking-tight text-slate-950">
+            {giftCardCopy.sectionTitle}
+          </h2>
+
+          <div className="mt-8">
+            <GiftCardForm locale={locale} copy={giftCardCopy.form} />
+          </div>
+
+          <ul className="mt-8 divide-y divide-slate-100">
+            {giftCards.length === 0 ? (
+              <li className="py-4 text-sm text-slate-500">{giftCardCopy.emptyState}</li>
+            ) : (
+              giftCards.map((card) => (
+                <li key={card.id} className="flex items-start justify-between gap-4 py-4">
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">{card.title}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {giftCardCopy.form.typeLabels[card.card_type]}
+                      {' · '}
+                      {formatGiftCardAmount(card)}
+                      {' · '}
+                      {card.valid_days} {giftCardCopy.validityLabel}
+                    </p>
+                  </div>
+                  <span
+                    className={
+                      card.active
+                        ? 'shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800'
+                        : 'shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500'
+                    }
+                  >
+                    {card.active ? giftCardCopy.activeLabel : giftCardCopy.inactiveLabel}
+                  </span>
+                </li>
+              ))
+            )}
+          </ul>
         </section>
       </div>
     </main>
