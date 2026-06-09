@@ -28,6 +28,8 @@ export interface ListPendingPurchasesResult {
 export interface MutatePurchaseResult {
   success: boolean;
   error?: string;
+  voucherCode?: string;
+  alreadyIssued?: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────
@@ -126,12 +128,11 @@ export async function listPendingPurchases(
   return { purchases };
 }
 
-// ─── Confirm Purchase ────────────────────────────────────────────
+// ─── Confirm Purchase (issues voucher atomically) ───────────────
 
 export async function confirmPurchase(
   purchaseId: string
 ): Promise<MutatePurchaseResult> {
-  // 1. Validate auth + merchant ownership
   const auth = await getMerchantIdForUser();
   if (auth.error || !auth.merchantId || !auth.userId) {
     return { success: false, error: 'unauthorized' };
@@ -139,19 +140,29 @@ export async function confirmPurchase(
 
   const supabase = await createSupabaseServerClient();
 
-  const { data, error: rpcErr } = await supabase.rpc('confirm_pending_purchase', {
-    p_purchase_id: purchaseId,
-  });
+  const { data, error: rpcErr } = await supabase.rpc(
+    'confirm_purchase_and_issue_voucher',
+    { p_purchase_id: purchaseId }
+  );
 
   if (rpcErr) {
     console.error('[confirmPurchase] rpc failed:', rpcErr.message);
     return { success: false, error: 'unknown' };
   }
 
-  const result = data as { success?: boolean; error?: string } | null;
+  const result = data as {
+    success?: boolean;
+    error?: string;
+    voucher_code?: string;
+    already_issued?: boolean;
+  } | null;
 
   if (result?.success) {
-    return { success: true };
+    return {
+      success: true,
+      voucherCode: result.voucher_code,
+      alreadyIssued: result.already_issued ?? false,
+    };
   }
 
   return { success: false, error: result?.error ?? 'unknown' };

@@ -170,9 +170,10 @@ function RejectDialog({
 
 interface PurchaseManagerProps {
   messages: MessagesShape;
+  locale: string;
 }
 
-export function PurchaseManager({ messages }: PurchaseManagerProps) {
+export function PurchaseManager({ messages, locale }: PurchaseManagerProps) {
   const t = messages.purchases;
   const [purchases, setPurchases] = useState<PendingPurchaseRow[]>([]);
   const [search, setSearch] = useState('');
@@ -180,6 +181,7 @@ export function PurchaseManager({ messages }: PurchaseManagerProps) {
   const [feedback, setFeedback] = useState<{
     type: 'success' | 'error';
     text: string;
+    voucherCode?: string;
   } | null>(null);
 
   // Dialog state
@@ -212,7 +214,11 @@ export function PurchaseManager({ messages }: PurchaseManagerProps) {
     startTransition(async () => {
       const result = await confirmPurchase(id);
       if (result.success) {
-        setFeedback({ type: 'success', text: t.successConfirmed });
+        setFeedback({
+          type: 'success',
+          text: t.successConfirmed,
+          voucherCode: result.voucherCode,
+        });
       } else {
         const errKey = result.error;
         const msg =
@@ -276,7 +282,21 @@ export function PurchaseManager({ messages }: PurchaseManagerProps) {
               : 'bg-red-50 text-red-800'
           }`}
         >
-          {feedback.text}
+          <span>{feedback.text}</span>
+          {feedback.voucherCode && (
+            <span className="ml-2">
+              <span className="font-mono">{feedback.voucherCode}</span>
+              {' — '}
+              <a
+                href={`/${locale}/v/${feedback.voucherCode}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:no-underline"
+              >
+                {t.viewVoucher}
+              </a>
+            </span>
+          )}
         </div>
       )}
 

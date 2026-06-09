@@ -434,7 +434,7 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
 
         <GiftCardManager locale={locale} copy={giftCardCopy} giftCards={giftCards} />
 
-        <PurchaseManager messages={messages} />
+        <PurchaseManager messages={messages} locale={locale} />
       </div>
     </main>
   );
