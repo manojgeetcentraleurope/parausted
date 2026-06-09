@@ -113,6 +113,24 @@ export const esMessages = {
     errorAlreadyProcessed: 'Este vale ya fue procesado.',
     errorUnknown: 'Error inesperado. Inténtalo de nuevo.',
   },
+  voucherHistory: {
+    title: 'Historial de vales',
+    searchPlaceholder: 'Buscar por código o referencia...',
+    filterLabel: 'Filtrar por estado',
+    allStatuses: 'Todos los estados',
+    code: 'Código',
+    status: 'Estado',
+    originalAmount: 'Importe original',
+    balance: 'Saldo',
+    recipient: 'Destinatario',
+    purchaseRef: 'Referencia de compra',
+    expiresAt: 'Expira',
+    issuedAt: 'Emitido',
+    redeemedAt: 'Canjeado',
+    empty: 'No hay vales para mostrar.',
+    errorLoad: 'No hemos podido cargar el historial de vales ahora mismo. Inténtalo de nuevo más tarde.',
+    viewVoucher: 'Ver',
+  },
 } as const;
 
 export type MessagesShape = DeepStringValues<typeof esMessages>;

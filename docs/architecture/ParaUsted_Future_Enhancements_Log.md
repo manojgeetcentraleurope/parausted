@@ -101,6 +101,22 @@ Recommended labels:
 
 ---
 
+### P2 — Make voucher-history relational joins explicit if schema evolves
+
+**Context:** The voucher-history query uses nested Supabase/PostgREST embeds for `purchases` and `redemptions`. This is acceptable while the schema has unambiguous relationships.
+
+**Risk:** If a second foreign key is later added between vouchers, purchases, or redemptions, automatic relationship detection may become ambiguous and break the dashboard query.
+
+**Future direction:**
+
+- If schema relationships become ambiguous, update nested selects to use explicit foreign-key hints.
+- Verify generated Supabase types after schema changes.
+- Add this to the migration review checklist when modifying voucher, purchase, or redemption relationships.
+
+**Target phase:** When changing voucher/purchase/redemption relationships or before production hardening
+
+---
+
 ### P3 — Personalized digital gift card experience
 
 **Context:** Future idea discussed: personalized digital gift cards with image, audio, video, animation, or creative recipient experience.

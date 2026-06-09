@@ -14,6 +14,8 @@ import { GiftCardManager, type GiftCardSectionCopy } from './gift-cards/gift-car
 import { LogoutButton } from './logout-button';
 import { PurchaseManager } from './purchases/purchase-manager';
 import { RedemptionManager } from './redemptions/redemption-manager';
+import { listMerchantVouchers } from './vouchers/actions';
+import { VoucherHistoryManager } from './vouchers/voucher-history-manager';
 
 type DashboardPageProps = {
   params: Promise<{ locale: string }>;
@@ -342,6 +344,10 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
 
   const giftCards = (giftCardsRaw ?? []) as GiftCardRow[];
 
+  const voucherResult = await listMerchantVouchers();
+  const merchantVouchers = voucherResult.ok ? voucherResult.vouchers : [];
+  const voucherLoadError = voucherResult.ok ? null : voucherResult.error;
+
   const publicPagePath = getLocalizedPath(`/m/${merchant.slug}`, locale);
   const homePath = getLocalizedPath('/', locale);
   const categoryLabel = summaryCopy.categories[merchant.category] ?? merchant.category;
@@ -437,6 +443,7 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
 
         <PurchaseManager messages={messages} locale={locale} />
         <RedemptionManager messages={messages} locale={locale} />
+        <VoucherHistoryManager vouchers={merchantVouchers} messages={messages} locale={locale} loadError={voucherLoadError} />
       </div>
     </main>
   );
