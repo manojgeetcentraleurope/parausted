@@ -13,6 +13,7 @@ import type { OnboardingFormCopy } from './onboarding-form';
 import { GiftCardManager, type GiftCardSectionCopy } from './gift-cards/gift-card-manager';
 import { LogoutButton } from './logout-button';
 import { PurchaseManager } from './purchases/purchase-manager';
+import { RedemptionManager } from './redemptions/redemption-manager';
 
 type DashboardPageProps = {
   params: Promise<{ locale: string }>;
@@ -435,6 +436,7 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
         <GiftCardManager locale={locale} copy={giftCardCopy} giftCards={giftCards} />
 
         <PurchaseManager messages={messages} locale={locale} />
+        <RedemptionManager messages={messages} locale={locale} />
       </div>
     </main>
   );
