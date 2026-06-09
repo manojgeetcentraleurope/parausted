@@ -67,6 +67,7 @@ function statusLabel(
     delivered: t.statusDelivered,
     partially_redeemed: t.statusPartiallyRedeemed,
     redeemed: t.statusRedeemed,
+    exchanged: t.statusExchanged,
     expired: t.statusExpired,
     voided: t.statusVoided,
   };
@@ -87,8 +88,11 @@ export default async function VoucherPage({ params }: VoucherPageProps) {
   const messages = getMessages(locale);
   const t = messages.voucher;
 
-  // Sanitise code: alphanumeric + dashes only, max 20 chars
-  const safeCode = /^[A-Z0-9-]{1,20}$/i.test(code) ? code.toUpperCase() : null;
+  // Sanitise code: must match the generated PU-XXXX-XXXX-XXXX format (hex, 17 chars).
+  // Rejects arbitrary strings before hitting the DB (defence in depth).
+  const safeCode = /^PU-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/i.test(code)
+    ? code.toUpperCase()
+    : null;
   if (!safeCode) {
     notFound();
   }
@@ -133,6 +137,7 @@ export default async function VoucherPage({ params }: VoucherPageProps) {
 
   const isVoided = voucher.status === 'voided';
   const isRedeemed = voucher.status === 'redeemed';
+  const isExchanged = voucher.status === 'exchanged';
 
   const expiryDate = new Date(voucher.expires_at).toLocaleDateString(
     locale === 'en' ? 'en-GB' : 'es-ES',
@@ -201,7 +206,7 @@ export default async function VoucherPage({ params }: VoucherPageProps) {
           <span className="font-medium text-gray-500">{t.status}: </span>
           <span
             className={
-              isRedeemed || isExpired || isVoided
+              isRedeemed || isExpired || isVoided || isExchanged
                 ? 'text-red-600'
                 : 'text-green-700'
             }
@@ -213,7 +218,7 @@ export default async function VoucherPage({ params }: VoucherPageProps) {
         {/* Code */}
         <div className="mt-6 rounded bg-gray-50 px-4 py-3 text-center">
           <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t.code}</p>
-          <p className="mt-1 font-mono text-xl font-bold tracking-widest text-gray-900">
+          <p className="mt-1 font-mono text-xl font-bold tracking-widest text-gray-900 break-all">
             {voucher.code}
           </p>
         </div>

@@ -84,6 +84,7 @@ export const esMessages = {
     statusDelivered: 'Entregada',
     statusPartiallyRedeemed: 'Usada parcialmente',
     statusRedeemed: 'Canjeada',
+    statusExchanged: 'Intercambiada',
     statusExpired: 'Expirada',
     statusVoided: 'Anulada',
     notFound: 'Tarjeta regalo no encontrada.',

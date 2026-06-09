@@ -82,6 +82,7 @@ export const enMessages = {
     statusDelivered: 'Delivered',
     statusPartiallyRedeemed: 'Partially used',
     statusRedeemed: 'Redeemed',
+    statusExchanged: 'Exchanged',
     statusExpired: 'Expired',
     statusVoided: 'Voided',
     notFound: 'Gift card not found.',
