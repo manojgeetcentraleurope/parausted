@@ -143,6 +143,10 @@ export const esMessages = {
     connectedHint: 'Stripe está conectado para pagos online.',
     loading: 'Abriendo configuración de Stripe...',
     errorGeneric: 'No hemos podido abrir la configuración de Stripe ahora mismo. Inténtalo de nuevo.',
+    refreshButton: 'Comprobar estado',
+    refreshing: 'Comprobando estado...',
+    refreshStillIncomplete: 'La configuración de Stripe aún está incompleta. Continúa la configuración en Stripe.',
+    errorNotConnected: 'Conecta Stripe antes de comprobar el estado.',
   },
 } as const;
 

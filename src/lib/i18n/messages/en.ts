@@ -141,5 +141,9 @@ export const enMessages = {
     connectedHint: 'Stripe setup is connected for online payments.',
     loading: 'Opening Stripe setup...',
     errorGeneric: 'We could not open Stripe setup right now. Please try again.',
+    refreshButton: 'Refresh status',
+    refreshing: 'Checking status...',
+    refreshStillIncomplete: 'Stripe setup is still incomplete. Continue setup in Stripe.',
+    errorNotConnected: 'Connect Stripe before checking status.',
   },
 } as const satisfies MessagesShape;

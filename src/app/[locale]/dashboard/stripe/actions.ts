@@ -92,3 +92,71 @@ export async function createStripeConnectOnboardingLink(
     return { success: false, error: 'generic' };
   }
 }
+
+export type RefreshStripeConnectStatusResult =
+  | {
+      success: true;
+      stripeOnboarded: boolean;
+      chargesEnabled: boolean;
+      detailsSubmitted: boolean;
+    }
+  | { success: false; error: string };
+
+export async function refreshStripeConnectStatus(): Promise<RefreshStripeConnectStatusResult> {
+  try {
+    const supabase = await createSupabaseServerClient();
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: 'unauthorized' };
+    }
+
+    const { data: merchant, error: merchantError } = await supabase
+      .from('merchants')
+      .select('id, stripe_account_id, stripe_onboarded')
+      .eq('auth_user_id', user.id)
+      .maybeSingle();
+
+    if (merchantError || !merchant) {
+      return { success: false, error: 'no_merchant' };
+    }
+
+    const stripeAccountId = merchant.stripe_account_id as string | null;
+
+    if (!stripeAccountId) {
+      return { success: false, error: 'not_connected' };
+    }
+
+    const stripe = getStripeClient();
+
+    const account = await stripe.accounts.retrieve(stripeAccountId);
+
+    const chargesEnabled = account.charges_enabled === true;
+    const detailsSubmitted = account.details_submitted === true;
+    const stripeOnboarded = chargesEnabled && detailsSubmitted;
+
+    const { error: updateError } = await supabase
+      .from('merchants')
+      .update({ stripe_onboarded: stripeOnboarded })
+      .eq('id', merchant.id)
+      .eq('auth_user_id', user.id);
+
+    if (updateError) {
+      console.error('[stripe] Failed to update stripe_onboarded', {
+        message: updateError.message,
+      });
+      return { success: false, error: 'generic' };
+    }
+
+    return { success: true, stripeOnboarded, chargesEnabled, detailsSubmitted };
+  } catch (err) {
+    console.error('[stripe] refreshStripeConnectStatus error', {
+      error: err instanceof Error ? err.message : 'unknown',
+    });
+    return { success: false, error: 'generic' };
+  }
+}

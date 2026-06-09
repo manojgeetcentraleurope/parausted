@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import type { Locale } from '@/lib/i18n/config';
-import { createStripeConnectOnboardingLink } from './actions';
+import { createStripeConnectOnboardingLink, refreshStripeConnectStatus } from './actions';
 
 export type StripeSetupMessages = {
   title: string;
@@ -17,6 +17,10 @@ export type StripeSetupMessages = {
   connectedHint: string;
   loading: string;
   errorGeneric: string;
+  refreshButton: string;
+  refreshing: string;
+  refreshStillIncomplete: string;
+  errorNotConnected: string;
 };
 
 type StripeSetupCardProps = {
@@ -33,10 +37,14 @@ export function StripeSetupCard({
   stripeOnboarded,
 }: StripeSetupCardProps) {
   const [loading, setLoading] = useState(false);
+  const [refreshLoading, setRefreshLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshMessage, setRefreshMessage] = useState<string | null>(null);
+  const [refreshIsError, setRefreshIsError] = useState(false);
+  const [localOnboarded, setLocalOnboarded] = useState(stripeOnboarded);
 
   function getStatusLabel(): string {
-    if (stripeOnboarded) return messages.statusConnected;
+    if (localOnboarded) return messages.statusConnected;
     if (stripeAccountId) return messages.statusIncomplete;
     return messages.statusNotConnected;
   }
@@ -61,6 +69,38 @@ export function StripeSetupCard({
     }
   }
 
+  async function handleRefreshStatus() {
+    setRefreshLoading(true);
+    setRefreshMessage(null);
+    setError(null);
+
+    try {
+      const result = await refreshStripeConnectStatus();
+
+      if (!result.success) {
+        setRefreshIsError(true);
+        if (result.error === 'not_connected') {
+          setRefreshMessage(messages.errorNotConnected);
+        } else {
+          setRefreshMessage(messages.errorGeneric);
+        }
+        return;
+      }
+
+      if (result.stripeOnboarded) {
+        setLocalOnboarded(true);
+      } else {
+        setRefreshIsError(false);
+        setRefreshMessage(messages.refreshStillIncomplete);
+      }
+    } catch {
+      setRefreshIsError(true);
+      setRefreshMessage(messages.errorGeneric);
+    } finally {
+      setRefreshLoading(false);
+    }
+  }
+
   const statusLabel = getStatusLabel();
 
   return (
@@ -73,7 +113,7 @@ export function StripeSetupCard({
         <span
           className={[
             'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold',
-            stripeOnboarded
+            localOnboarded
               ? 'bg-emerald-50 text-emerald-700'
               : stripeAccountId
                 ? 'bg-amber-50 text-amber-700'
@@ -84,7 +124,7 @@ export function StripeSetupCard({
         </span>
       </div>
 
-      {stripeOnboarded ? (
+      {localOnboarded ? (
         <p className="mt-4 text-sm text-emerald-700">{messages.connectedHint}</p>
       ) : (
         <>
@@ -93,14 +133,34 @@ export function StripeSetupCard({
               {error}
             </p>
           )}
-          <button
-            className="mt-6 inline-flex items-center justify-center rounded-xl bg-cyan-700 px-6 py-3 text-sm font-semibold text-white transition hover:bg-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={loading}
-            onClick={handleConnect}
-            type="button"
-          >
-            {loading ? messages.loading : stripeAccountId ? messages.continueButton : messages.connectButton}
-          </button>
+          {refreshMessage && (
+            <p
+              className={`mt-4 text-sm font-medium ${refreshIsError ? 'text-red-600' : 'text-amber-700'}`}
+              role={refreshIsError ? 'alert' : 'status'}
+            >
+              {refreshMessage}
+            </p>
+          )}
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button
+              className="inline-flex items-center justify-center rounded-xl bg-cyan-700 px-6 py-3 text-sm font-semibold text-white transition hover:bg-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={loading || refreshLoading}
+              onClick={handleConnect}
+              type="button"
+            >
+              {loading ? messages.loading : stripeAccountId ? messages.continueButton : messages.connectButton}
+            </button>
+            {stripeAccountId && (
+              <button
+                className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={loading || refreshLoading}
+                onClick={handleRefreshStatus}
+                type="button"
+              >
+                {refreshLoading ? messages.refreshing : messages.refreshButton}
+              </button>
+            )}
+          </div>
         </>
       )}
     </section>
