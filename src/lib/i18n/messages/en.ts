@@ -129,4 +129,17 @@ export const enMessages = {
     errorLoad: 'We could not load voucher history right now. Please try again later.',
     viewVoucher: 'View',
   },
+  stripeSetup: {
+    title: 'Stripe payments',
+    description: 'Enable card payments for tourists and online buyers. Stripe handles onboarding securely.',
+    statusLabel: 'Status',
+    statusNotConnected: 'Not connected',
+    statusIncomplete: 'Setup incomplete',
+    statusConnected: 'Connected',
+    connectButton: 'Connect Stripe',
+    continueButton: 'Continue setup',
+    connectedHint: 'Stripe setup is connected for online payments.',
+    loading: 'Opening Stripe setup...',
+    errorGeneric: 'We could not open Stripe setup right now. Please try again.',
+  },
 } as const satisfies MessagesShape;

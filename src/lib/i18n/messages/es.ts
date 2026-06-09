@@ -131,6 +131,19 @@ export const esMessages = {
     errorLoad: 'No hemos podido cargar el historial de vales ahora mismo. Inténtalo de nuevo más tarde.',
     viewVoucher: 'Ver',
   },
+  stripeSetup: {
+    title: 'Pagos con Stripe',
+    description: 'Activa pagos con tarjeta para turistas y compradores online. Stripe gestiona el alta de forma segura.',
+    statusLabel: 'Estado',
+    statusNotConnected: 'No conectado',
+    statusIncomplete: 'Configuración incompleta',
+    statusConnected: 'Conectado',
+    connectButton: 'Conectar Stripe',
+    continueButton: 'Continuar configuración',
+    connectedHint: 'Stripe está conectado para pagos online.',
+    loading: 'Abriendo configuración de Stripe...',
+    errorGeneric: 'No hemos podido abrir la configuración de Stripe ahora mismo. Inténtalo de nuevo.',
+  },
 } as const;
 
 export type MessagesShape = DeepStringValues<typeof esMessages>;

@@ -16,6 +16,7 @@ import { PurchaseManager } from './purchases/purchase-manager';
 import { RedemptionManager } from './redemptions/redemption-manager';
 import { listMerchantVouchers } from './vouchers/actions';
 import { VoucherHistoryManager } from './vouchers/voucher-history-manager';
+import { StripeSetupCard } from './stripe/stripe-setup-card';
 
 type DashboardPageProps = {
   params: Promise<{ locale: string }>;
@@ -28,6 +29,8 @@ type MerchantRow = {
   category: string;
   city: string;
   status: string;
+  stripe_account_id: string | null;
+  stripe_onboarded: boolean;
 };
 
 type GiftCardRow = {
@@ -313,7 +316,7 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
 
   const { data: merchantRaw } = await supabase
     .from('merchants')
-    .select('id, name, slug, category, city, status')
+    .select('id, name, slug, category, city, status, stripe_account_id, stripe_onboarded')
     .eq('auth_user_id', user.id)
     .maybeSingle();
 
@@ -438,6 +441,13 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
             </div>
           </div>
         </section>
+
+        <StripeSetupCard
+          locale={locale}
+          messages={messages.stripeSetup}
+          stripeAccountId={merchant.stripe_account_id}
+          stripeOnboarded={merchant.stripe_onboarded}
+        />
 
         <GiftCardManager locale={locale} copy={giftCardCopy} giftCards={giftCards} />
 
