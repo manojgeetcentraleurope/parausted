@@ -14,6 +14,16 @@ import {
 import { createPurchaseAction, type PurchaseActionState } from './actions';
 
 // ---------------------------------------------------------------------------
+// Checkout return status type (exported so page.tsx can import it)
+// ---------------------------------------------------------------------------
+
+export type CheckoutReturnStatus =
+  | { kind: 'none' }
+  | { kind: 'success_preparing' }
+  | { kind: 'success_ready'; voucherCode: string }
+  | { kind: 'cancelled' };
+
+// ---------------------------------------------------------------------------
 // Prop types (exported so page.tsx can import them)
 // ---------------------------------------------------------------------------
 
@@ -40,7 +50,7 @@ type PurchaseFormProps = {
   giftCard: GiftCardDisplayData;
   availablePaymentMethods: readonly DirectPaymentMethod[];
   stripeCardAvailable: boolean;
-  checkoutStatus: 'success' | 'cancelled' | null;
+  checkoutReturnStatus: CheckoutReturnStatus;
 };
 
 // ---------------------------------------------------------------------------
@@ -94,6 +104,9 @@ type Copy = {
   checkoutSuccessMessage: string;
   checkoutCancelledTitle: string;
   checkoutCancelledMessage: string;
+  checkoutReadyTitle: string;
+  checkoutReadyMessage: string;
+  checkoutReadyLinkLabel: string;
 };
 
 const COPY: Record<Locale, Copy> = {
@@ -173,6 +186,10 @@ const COPY: Record<Locale, Copy> = {
     checkoutCancelledTitle: 'Pago cancelado',
     checkoutCancelledMessage:
       'El pago con tarjeta se ha cancelado. Puedes revisar tus datos e intentarlo de nuevo.',
+    checkoutReadyTitle: 'Tu tarjeta regalo está lista',
+    checkoutReadyMessage:
+      'Tu pago con tarjeta se ha confirmado y tu tarjeta regalo se ha emitido.',
+    checkoutReadyLinkLabel: 'Ver tarjeta regalo',
   },
   en: {
     backLabel: 'Back',
@@ -250,6 +267,10 @@ const COPY: Record<Locale, Copy> = {
     checkoutCancelledTitle: 'Payment cancelled',
     checkoutCancelledMessage:
       'Your card payment was cancelled. You can review your details and try again.',
+    checkoutReadyTitle: 'Your gift card is ready',
+    checkoutReadyMessage:
+      'Your card payment was confirmed and your gift card has been issued.',
+    checkoutReadyLinkLabel: 'View gift card',
   },
 };
 
@@ -370,7 +391,7 @@ export function PurchaseForm({
   giftCard,
   availablePaymentMethods,
   stripeCardAvailable,
-  checkoutStatus,
+  checkoutReturnStatus,
 }: PurchaseFormProps) {
   const copy = COPY[locale];
 
@@ -446,7 +467,22 @@ export function PurchaseForm({
       </Link>
 
       {/* Stripe return status banner */}
-      {checkoutStatus === 'success' && (
+      {checkoutReturnStatus.kind === 'success_ready' && (
+        <div
+          role="status"
+          className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4"
+        >
+          <p className="text-sm font-semibold text-emerald-800">{copy.checkoutReadyTitle}</p>
+          <p className="mt-1 text-sm text-emerald-700">{copy.checkoutReadyMessage}</p>
+          <Link
+            href={`/${locale}/v/${checkoutReturnStatus.voucherCode}`}
+            className="mt-3 inline-block text-sm font-medium text-emerald-800 underline hover:text-emerald-900"
+          >
+            {copy.checkoutReadyLinkLabel} →
+          </Link>
+        </div>
+      )}
+      {checkoutReturnStatus.kind === 'success_preparing' && (
         <div
           role="status"
           className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4"
@@ -455,7 +491,7 @@ export function PurchaseForm({
           <p className="mt-1 text-sm text-emerald-700">{copy.checkoutSuccessMessage}</p>
         </div>
       )}
-      {checkoutStatus === 'cancelled' && (
+      {checkoutReturnStatus.kind === 'cancelled' && (
         <div
           role="status"
           className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4"

@@ -341,7 +341,7 @@ export async function createPurchaseAction(
     let checkoutUrl: string;
     try {
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
-      const successUrl = `${baseUrl}/${locale}/m/${context.slug}/gift-cards/${context.giftCardId}?checkout=success`;
+      const successUrl = `${baseUrl}/${locale}/m/${context.slug}/gift-cards/${context.giftCardId}?checkout=success&session_id={CHECKOUT_SESSION_ID}`;
       const cancelUrl = `${baseUrl}/${locale}/m/${context.slug}/gift-cards/${context.giftCardId}?checkout=cancelled`;
 
       const session = await stripe.checkout.sessions.create({

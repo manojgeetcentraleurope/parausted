@@ -8,8 +8,9 @@ import { centsToEuros } from '@/lib/gift-cards/money';
 import type { GiftCardType } from '@/lib/gift-cards/schema';
 import type { DirectPaymentMethod } from '@/lib/purchases/schema';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { getStripeClient } from '@/lib/stripe/server';
 import { PurchaseForm } from './purchase-form';
-import type { GiftCardDisplayData, MerchantDisplayData } from './purchase-form';
+import type { GiftCardDisplayData, MerchantDisplayData, CheckoutReturnStatus } from './purchase-form';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -17,7 +18,7 @@ import type { GiftCardDisplayData, MerchantDisplayData } from './purchase-form';
 
 type PageProps = {
   params: Promise<{ locale: string; slug: string; giftCardId: string }>;
-  searchParams?: Promise<{ checkout?: string }>;
+  searchParams?: Promise<{ checkout?: string; session_id?: string }>;
 };
 
 type MerchantRow = {
@@ -149,6 +150,75 @@ function buildGiftCardDisplayData(card: GiftCardRow, locale: Locale): GiftCardDi
 }
 
 // ---------------------------------------------------------------------------
+// Checkout return status resolver (read-only, no DB mutations)
+// ---------------------------------------------------------------------------
+
+async function resolveCheckoutReturnStatus(input: {
+  checkout: string | undefined;
+  sessionId: string | undefined;
+  giftCardId: string;
+}): Promise<CheckoutReturnStatus> {
+  const { checkout, sessionId, giftCardId } = input;
+
+  if (checkout === 'cancelled') {
+    return { kind: 'cancelled' };
+  }
+
+  if (checkout !== 'success') {
+    return { kind: 'none' };
+  }
+
+  if (!sessionId) {
+    return { kind: 'success_preparing' };
+  }
+
+  // Stripe Checkout Session IDs always start with 'cs_'
+  if (!sessionId.startsWith('cs_')) {
+    return { kind: 'success_preparing' };
+  }
+
+  try {
+    const stripe = getStripeClient();
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    // Validate this session belongs to this gift card when metadata is present
+    if (
+      session.metadata?.gift_card_id &&
+      session.metadata.gift_card_id !== giftCardId
+    ) {
+      return { kind: 'success_preparing' };
+    }
+
+    // Resolve purchase_id from metadata first, fall back to client_reference_id
+    const purchaseId =
+      session.metadata?.purchase_id ?? session.client_reference_id ?? null;
+
+    if (!purchaseId) {
+      return { kind: 'success_preparing' };
+    }
+
+    // Read-only voucher lookup — no mutations
+    const supabase = await createSupabaseServerClient();
+    const { data: voucherData } = await supabase
+      .from('vouchers')
+      .select('code')
+      .eq('purchase_id', purchaseId)
+      .maybeSingle();
+
+    if (voucherData?.code) {
+      return { kind: 'success_ready', voucherCode: voucherData.code };
+    }
+
+    return { kind: 'success_preparing' };
+  } catch (err) {
+    console.error('[resolveCheckoutReturnStatus] Error resolving checkout return status', {
+      error: err instanceof Error ? err.message : 'unknown',
+    });
+    return { kind: 'success_preparing' };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // generateMetadata
 // ---------------------------------------------------------------------------
 
@@ -200,11 +270,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function PurchasePage({ params, searchParams }: PageProps) {
   const { locale, slug, giftCardId } = await params;
-  const rawCheckout = searchParams ? (await searchParams).checkout : undefined;
-  const checkoutStatus =
-    rawCheckout === 'success' ? 'success'
-    : rawCheckout === 'cancelled' ? 'cancelled'
-    : null;
+  const rawSearchParams = searchParams ? await searchParams : undefined;
+  const rawCheckout = rawSearchParams?.checkout;
+  const rawSessionId = rawSearchParams?.session_id;
 
   if (!isSupportedLocale(locale)) {
     notFound();
@@ -223,6 +291,12 @@ export default async function PurchasePage({ params, searchParams }: PageProps) 
   const availablePaymentMethods = resolveAvailablePaymentMethods(merchant);
   const giftCardDisplay = buildGiftCardDisplayData(card, locale);
 
+  const checkoutReturnStatus = await resolveCheckoutReturnStatus({
+    checkout: rawCheckout,
+    sessionId: rawSessionId,
+    giftCardId,
+  });
+
   const merchantDisplay: MerchantDisplayData = {
     name: merchant.name,
     slug: merchant.slug,
@@ -237,7 +311,7 @@ export default async function PurchasePage({ params, searchParams }: PageProps) 
           giftCard={giftCardDisplay}
           availablePaymentMethods={availablePaymentMethods}
           stripeCardAvailable={merchant.stripe_onboarded}
-          checkoutStatus={checkoutStatus}
+          checkoutReturnStatus={checkoutReturnStatus}
         />
       </div>
     </main>
