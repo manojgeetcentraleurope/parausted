@@ -62,6 +62,34 @@ async function getMerchantIdForUser(): Promise<{
   return { merchantId: merchant.id, userId: user.id };
 }
 
+/**
+ * Guard for merchant manual confirmation/rejection actions.
+ * Only OFFLINE purchases may be confirmed or rejected from this center.
+ * ONLINE/card purchases are exclusively confirmed via the Stripe webhook.
+ */
+async function assertOfflinePendingPurchase(
+  purchaseId: string,
+  merchantId: string,
+): Promise<{ valid: true } | { valid: false; error: string }> {
+  const supabase = await createSupabaseServerClient();
+
+  const { data } = await supabase
+    .from('purchases')
+    .select('status, payment_source, payment_method')
+    .eq('id', purchaseId)
+    .eq('merchant_id', merchantId)
+    .single();
+
+  if (!data) return { valid: false, error: 'not_found' };
+  if (data.payment_source !== 'OFFLINE') return { valid: false, error: 'not_found' };
+  if (!['bizum_direct', 'bank_transfer', 'cash'].includes(data.payment_method as string)) {
+    return { valid: false, error: 'not_found' };
+  }
+  if (data.status !== 'pending') return { valid: false, error: 'already_processed' };
+
+  return { valid: true };
+}
+
 // ─── List Pending Purchases ──────────────────────────────────────
 
 export async function listPendingPurchases(
@@ -92,6 +120,7 @@ export async function listPendingPurchases(
     )
     .eq('merchant_id', merchantId)
     .in('status', ['pending'])
+    .eq('payment_source', 'OFFLINE')
     .order('created_at', { ascending: false });
 
   if (search && search.trim().length > 0) {
@@ -140,6 +169,11 @@ export async function confirmPurchase(
 
   const supabase = await createSupabaseServerClient();
 
+  const guard = await assertOfflinePendingPurchase(purchaseId, auth.merchantId);
+  if (!guard.valid) {
+    return { success: false, error: guard.error };
+  }
+
   const { data, error: rpcErr } = await supabase.rpc(
     'confirm_purchase_and_issue_voucher',
     { p_purchase_id: purchaseId }
@@ -181,6 +215,11 @@ export async function rejectPurchase(
   }
 
   const supabase = await createSupabaseServerClient();
+
+  const guard = await assertOfflinePendingPurchase(purchaseId, auth.merchantId);
+  if (!guard.valid) {
+    return { success: false, error: guard.error };
+  }
 
   const { data, error: rpcErr } = await supabase.rpc('cancel_pending_purchase', {
     p_purchase_id: purchaseId,
