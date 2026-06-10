@@ -215,3 +215,31 @@ The RPC should atomically:
 - future CI may include schema linting for common trigger assumptions
 
 **Target phase:** Before production hardening
+
+---
+
+## Stripe Checkout Recovery Tracking  
+  
+Track abandoned, failed, and expired Stripe Checkout attempts for `ONLINE/card` purchases.  
+  
+Current MVP behavior:  
+- A pending `ONLINE/card` purchase is created before Stripe Checkout redirect.  
+- Successful card payments are confirmed via verified Stripe webhook.  
+- Voucher issuance happens automatically after webhook-confirmed payment.  
+- Failed, abandoned, or expired Checkout attempts are not yet tracked as durable recovery events.  
+  
+Future slice should consider:  
+- Store `stripe_checkout_session_id` on purchases or in a dedicated checkout-attempt table.  
+- Handle `checkout.session.expired` and/or relevant failed payment events.  
+- Track recovery state, such as:  
+  - checkout status  
+  - last failure reason, if safe and useful  
+  - last reminder sent timestamp  
+  - reminder count  
+- Support at most one transactional recovery reminder before purchase expiry.  
+- Ensure reminder language is transactional, not marketing-oriented.  
+- Ensure GDPR-safe handling of buyer email and avoid logging PII.  
+- Keep webhook confirmation as the only source of truth for successful card payment confirmation.  
+  
+Priority: Post-MVP / Stripe hardening.  
+Owner lens: Architect + PO + Compliance.
