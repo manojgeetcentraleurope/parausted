@@ -40,6 +40,7 @@ type PurchaseFormProps = {
   giftCard: GiftCardDisplayData;
   availablePaymentMethods: readonly DirectPaymentMethod[];
   stripeCardAvailable: boolean;
+  checkoutStatus: 'success' | 'cancelled' | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -89,6 +90,10 @@ type Copy = {
   charCount: (current: number, max: number) => string;
   redirectingToCheckout: string;
   checkoutError: string;
+  checkoutSuccessTitle: string;
+  checkoutSuccessMessage: string;
+  checkoutCancelledTitle: string;
+  checkoutCancelledMessage: string;
 };
 
 const COPY: Record<Locale, Copy> = {
@@ -162,6 +167,12 @@ const COPY: Record<Locale, Copy> = {
     charCount: (current, max) => `${current} / ${max}`,
     redirectingToCheckout: 'Redirigiendo al pago con tarjeta…',
     checkoutError: 'No se pudo iniciar el pago. Inténtalo de nuevo.',
+    checkoutSuccessTitle: 'Pago recibido',
+    checkoutSuccessMessage:
+      'Hemos recibido tu pago con tarjeta. Tu tarjeta regalo se está preparando y debería estar disponible en breve.',
+    checkoutCancelledTitle: 'Pago cancelado',
+    checkoutCancelledMessage:
+      'El pago con tarjeta se ha cancelado. Puedes revisar tus datos e intentarlo de nuevo.',
   },
   en: {
     backLabel: 'Back',
@@ -233,6 +244,12 @@ const COPY: Record<Locale, Copy> = {
     charCount: (current, max) => `${current} / ${max}`,
     redirectingToCheckout: 'Redirecting to card payment…',
     checkoutError: 'Could not start payment. Please try again.',
+    checkoutSuccessTitle: 'Payment received',
+    checkoutSuccessMessage:
+      'Your card payment was received. Your gift card is being prepared and should be available shortly.',
+    checkoutCancelledTitle: 'Payment cancelled',
+    checkoutCancelledMessage:
+      'Your card payment was cancelled. You can review your details and try again.',
   },
 };
 
@@ -353,6 +370,7 @@ export function PurchaseForm({
   giftCard,
   availablePaymentMethods,
   stripeCardAvailable,
+  checkoutStatus,
 }: PurchaseFormProps) {
   const copy = COPY[locale];
 
@@ -426,6 +444,26 @@ export function PurchaseForm({
       >
         ← {copy.backLabel}
       </Link>
+
+      {/* Stripe return status banner */}
+      {checkoutStatus === 'success' && (
+        <div
+          role="status"
+          className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4"
+        >
+          <p className="text-sm font-semibold text-emerald-800">{copy.checkoutSuccessTitle}</p>
+          <p className="mt-1 text-sm text-emerald-700">{copy.checkoutSuccessMessage}</p>
+        </div>
+      )}
+      {checkoutStatus === 'cancelled' && (
+        <div
+          role="status"
+          className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4"
+        >
+          <p className="text-sm font-semibold text-amber-800">{copy.checkoutCancelledTitle}</p>
+          <p className="mt-1 text-sm text-amber-700">{copy.checkoutCancelledMessage}</p>
+        </div>
+      )}
 
       {/* Gift card summary */}
       <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-5">

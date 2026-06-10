@@ -17,6 +17,7 @@ import type { GiftCardDisplayData, MerchantDisplayData } from './purchase-form';
 
 type PageProps = {
   params: Promise<{ locale: string; slug: string; giftCardId: string }>;
+  searchParams?: Promise<{ checkout?: string }>;
 };
 
 type MerchantRow = {
@@ -197,8 +198,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 // Page
 // ---------------------------------------------------------------------------
 
-export default async function PurchasePage({ params }: PageProps) {
+export default async function PurchasePage({ params, searchParams }: PageProps) {
   const { locale, slug, giftCardId } = await params;
+  const rawCheckout = searchParams ? (await searchParams).checkout : undefined;
+  const checkoutStatus =
+    rawCheckout === 'success' ? 'success'
+    : rawCheckout === 'cancelled' ? 'cancelled'
+    : null;
 
   if (!isSupportedLocale(locale)) {
     notFound();
@@ -231,6 +237,7 @@ export default async function PurchasePage({ params }: PageProps) {
           giftCard={giftCardDisplay}
           availablePaymentMethods={availablePaymentMethods}
           stripeCardAvailable={merchant.stripe_onboarded}
+          checkoutStatus={checkoutStatus}
         />
       </div>
     </main>
