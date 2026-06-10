@@ -10,6 +10,7 @@ import {
   type DirectPaymentMethod,
 } from '@/lib/purchases/schema';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { getStripeClient } from '@/lib/stripe/server';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -21,13 +22,21 @@ type RouteContext = {
   giftCardId: string;
 };
 
-export type PurchaseSuccessData = {
-  referenceCode: string;
-  paymentMethod: DirectPaymentMethod;
-  displayAmount: string;
-  merchantBizumPhone?: string;
-  merchantBankIban?: string;
-};
+export type PurchaseSuccessData =
+  | {
+      kind: 'offline_pending';
+      referenceCode: string;
+      paymentMethod: DirectPaymentMethod;
+      displayAmount: string;
+      merchantBizumPhone?: string;
+      merchantBankIban?: string;
+    }
+  | {
+      kind: 'stripe_checkout';
+      checkoutUrl: string;
+      referenceCode: string;
+      displayAmount: string;
+    };
 
 export type PurchaseActionState =
   | null
@@ -38,11 +47,14 @@ type MerchantRecord = {
   id: string;
   bizum_phone: string | null;
   bank_iban: string | null;
+  stripe_onboarded: boolean;
+  stripe_account_id: string | null;
 };
 
 type GiftCardRecord = {
   id: string;
   card_type: GiftCardType;
+  title: string;
   amount_cents: number | null;
   min_amount_cents: number | null;
   max_amount_cents: number | null;
@@ -62,6 +74,8 @@ const MESSAGES = {
     amountBelowMin: (min: string) => `El importe mínimo es €${min}.`,
     amountAboveMax: (max: string) => `El importe máximo es €${max}.`,
     createFailed: 'No se pudo crear la solicitud. Inténtalo de nuevo.',
+    cardNotAvailable: 'El pago con tarjeta no está disponible para este comercio.',
+    checkoutFailed: 'No se pudo iniciar el pago. Inténtalo de nuevo.',
   },
   en: {
     validationFailed: 'Please review the form fields.',
@@ -72,6 +86,8 @@ const MESSAGES = {
     amountBelowMin: (min: string) => `Minimum amount is €${min}.`,
     amountAboveMax: (max: string) => `Maximum amount is €${max}.`,
     createFailed: 'Could not create the request. Please try again.',
+    cardNotAvailable: 'Card payment is not available for this merchant.',
+    checkoutFailed: 'Could not start card payment. Please try again.',
   },
 } as const;
 
@@ -150,10 +166,15 @@ function deriveAmount(
 // valid pending purchase was successfully created.
 // ---------------------------------------------------------------------------
 
+type OfflinePaymentDetails = {
+  merchantBizumPhone?: string;
+  merchantBankIban?: string;
+};
+
 function resolvePaymentDetails(
   paymentMethod: DirectPaymentMethod,
   merchant: MerchantRecord,
-): Pick<PurchaseSuccessData, 'merchantBizumPhone' | 'merchantBankIban'> {
+): OfflinePaymentDetails {
   if (paymentMethod === 'bizum_direct') {
     return { merchantBizumPhone: merchant.bizum_phone ?? undefined };
   }
@@ -198,7 +219,7 @@ export async function createPurchaseAction(
   // 2. Fetch active merchant by slug
   const { data: merchantData, error: merchantError } = await supabase
     .from('merchants')
-    .select('id, bizum_phone, bank_iban')
+    .select('id, bizum_phone, bank_iban, stripe_onboarded, stripe_account_id')
     .eq('slug', context.slug)
     .eq('status', 'active')
     .single();
@@ -209,10 +230,17 @@ export async function createPurchaseAction(
 
   const merchant = merchantData as MerchantRecord;
 
+  // 2a. Server-side card eligibility check — fast fail before DB insert
+  if (validated.paymentMethod === 'card') {
+    if (!merchant.stripe_onboarded || !merchant.stripe_account_id) {
+      return { ok: false, message: msg.cardNotAvailable };
+    }
+  }
+
   // 3. Fetch active gift card, verifying it belongs to this merchant
   const { data: cardData, error: cardError } = await supabase
     .from('gift_cards')
-    .select('id, card_type, amount_cents, min_amount_cents, max_amount_cents')
+    .select('id, card_type, title, amount_cents, min_amount_cents, max_amount_cents')
     .eq('id', context.giftCardId)
     .eq('merchant_id', merchant.id)
     .eq('active', true)
@@ -236,7 +264,23 @@ export async function createPurchaseAction(
   }
 
   // 5. Insert purchase with retry on unique reference_code collision
-  const insertData = {
+  // Initialize Stripe client before insert so a missing key fails fast
+  // without leaving an orphaned pending purchase row.
+  let stripe: ReturnType<typeof getStripeClient> | null = null;
+
+  if (validated.paymentMethod === 'card') {
+  try {
+    stripe = getStripeClient();
+  } catch (err) {
+    console.error('[createPurchaseAction] Stripe client initialization failed', {
+      error: err instanceof Error ? err.message : 'unknown',
+    });
+    return { ok: false, message: msg.checkoutFailed };
+  }
+}
+  const purchaseId = crypto.randomUUID();
+  const purchaseInsertData = {
+    id: purchaseId,
     merchant_id: merchant.id,
     gift_card_id: card.id,
     amount_cents: amountResult.amountCents,
@@ -249,14 +293,14 @@ export async function createPurchaseAction(
     design_template: validated.designTemplate,
     personal_message: validated.personalMessage,
     sender_name: validated.senderName,
-    payment_source: 'OFFLINE',
+    payment_source: validated.paymentMethod === 'card' ? 'ONLINE' : 'OFFLINE',
     payment_method: validated.paymentMethod,
     delivery_method: 'email',
     status: 'pending',
     consent_immediate_delivery: true,
     consent_accepted_at: new Date().toISOString(),
     expires_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
-  } as const;
+  };
 
   let insertedReferenceCode: string | null = null;
   const MAX_ATTEMPTS = 3;
@@ -266,7 +310,7 @@ export async function createPurchaseAction(
 
     const { error: insertError } = await supabase
       .from('purchases')
-      .insert({ ...insertData, reference_code: referenceCode });
+      .insert({ ...purchaseInsertData, reference_code: referenceCode });
 
     if (insertError === null) {
       insertedReferenceCode = referenceCode;
@@ -282,12 +326,93 @@ export async function createPurchaseAction(
     return { ok: false, message: msg.createFailed };
   }
 
-  // 6. Return safe success data — payment details revealed only now
+  // 6. Card payment: create Stripe Checkout Session
+  if (validated.paymentMethod === 'card') {
+    const stripeAccountId = merchant.stripe_account_id;
+    if (!stripeAccountId) {
+      // Defensive: should not reach here due to step 2a check
+      return { ok: false, message: msg.cardNotAvailable };
+    }
+
+    if (stripe === null) {
+      return { ok: false, message: msg.checkoutFailed };
+    }
+
+    let checkoutUrl: string;
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+      const successUrl = `${baseUrl}/${locale}/m/${context.slug}/gift-cards/${context.giftCardId}?checkout=success`;
+      const cancelUrl = `${baseUrl}/${locale}/m/${context.slug}/gift-cards/${context.giftCardId}?checkout=cancelled`;
+
+      const session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: 'eur',
+              unit_amount: amountResult.amountCents,
+              product_data: {
+                name: card.title,
+              },
+            },
+            quantity: 1,
+          },
+        ],
+        customer_email: validated.buyerEmail,
+        client_reference_id: purchaseId,
+        metadata: {
+          purchase_id: purchaseId,
+          merchant_id: merchant.id,
+          gift_card_id: card.id,
+        },
+        payment_intent_data: {
+          metadata: {
+            purchase_id: purchaseId,
+          },
+          transfer_data: {
+            destination: stripeAccountId,
+          },
+        },
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+      });
+
+      if (!session.url) {
+        console.error('[createPurchaseAction] Stripe session URL was null', {
+          reference_code: `PU-****-${insertedReferenceCode.slice(-4)}`,
+        });
+        return { ok: false, message: msg.checkoutFailed };
+      }
+
+      checkoutUrl = session.url;
+    } catch (err) {
+      const errMessage = err instanceof Error ? err.message : 'unknown';
+      console.error('[createPurchaseAction] Stripe checkout session creation failed', {
+        reference_code: `PU-****-${insertedReferenceCode.slice(-4)}`,
+        error: errMessage,
+      });
+      return { ok: false, message: msg.checkoutFailed };
+    }
+
+    return {
+      ok: true,
+      data: {
+        kind: 'stripe_checkout',
+        checkoutUrl,
+        referenceCode: insertedReferenceCode,
+        displayAmount: amountResult.displayAmount,
+      },
+    };
+  }
+
+  // 7. Offline payment — return safe success data; details revealed only now
   const paymentDetails = resolvePaymentDetails(validated.paymentMethod, merchant);
 
   return {
     ok: true,
     data: {
+      kind: 'offline_pending',
       referenceCode: insertedReferenceCode,
       paymentMethod: validated.paymentMethod,
       displayAmount: amountResult.displayAmount,

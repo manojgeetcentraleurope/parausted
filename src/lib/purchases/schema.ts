@@ -37,6 +37,15 @@ export const DIRECT_PAYMENT_METHODS = [
 
 export type DirectPaymentMethod = (typeof DIRECT_PAYMENT_METHODS)[number];
 
+export const ONLINE_PAYMENT_METHODS = ['card'] as const;
+export type OnlinePaymentMethod = (typeof ONLINE_PAYMENT_METHODS)[number];
+
+export const PURCHASE_PAYMENT_METHODS = [
+  ...DIRECT_PAYMENT_METHODS,
+  ...ONLINE_PAYMENT_METHODS,
+] as const;
+export type PurchasePaymentMethod = (typeof PURCHASE_PAYMENT_METHODS)[number];
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -94,7 +103,7 @@ export const purchaseFormSchema = z.object({
     .max(500),
   // Raw string; the server action parses and validates range against DB.
   customAmountInput: z.string().trim().optional().transform(normalizeOptionalText),
-  paymentMethod: z.enum(DIRECT_PAYMENT_METHODS, { message: 'Payment method is required' }),
+  paymentMethod: z.enum(PURCHASE_PAYMENT_METHODS, { message: 'Payment method is required' }),
   // Checkbox sends 'on' when checked; absent when unchecked fails literal check.
   consentDelivery: z.literal('on', { message: 'Consent is required' }),
 });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect } from 'react';
 import Link from 'next/link';
 
 import type { Locale } from '@/lib/i18n/config';
@@ -9,6 +9,7 @@ import {
   RELATIONSHIP_VALUES,
   DESIGN_TEMPLATE_VALUES,
   type DirectPaymentMethod,
+  type PurchasePaymentMethod,
 } from '@/lib/purchases/schema';
 import { createPurchaseAction, type PurchaseActionState } from './actions';
 
@@ -67,7 +68,7 @@ type Copy = {
   fieldConsent: string;
   submitLabel: string;
   submittingLabel: string;
-  paymentMethodLabels: Record<DirectPaymentMethod, string>;
+  paymentMethodLabels: Record<PurchasePaymentMethod, string>;
   relationshipLabels: Record<(typeof RELATIONSHIP_VALUES)[number], string>;
   designTemplateLabels: Record<(typeof DESIGN_TEMPLATE_VALUES)[number], string>;
   successTitle: string;
@@ -86,8 +87,8 @@ type Copy = {
   selectDesignTemplatePlaceholder: string;
   selectPaymentMethodPlaceholder: string;
   charCount: (current: number, max: number) => string;
-  cardComingSoonLabel: string;
-  cardComingSoonDescription: string;
+  redirectingToCheckout: string;
+  checkoutError: string;
 };
 
 const COPY: Record<Locale, Copy> = {
@@ -118,6 +119,7 @@ const COPY: Record<Locale, Copy> = {
       bizum_direct: 'Bizum',
       bank_transfer: 'Transferencia bancaria',
       cash: 'Efectivo',
+      card: 'Tarjeta de crédito/débito',
     },
     relationshipLabels: {
       mama: 'Mamá',
@@ -158,9 +160,8 @@ const COPY: Record<Locale, Copy> = {
     selectDesignTemplatePlaceholder: 'Selecciona un diseño',
     selectPaymentMethodPlaceholder: 'Selecciona el método de pago',
     charCount: (current, max) => `${current} / ${max}`,
-    cardComingSoonLabel: 'Pago con tarjeta',
-    cardComingSoonDescription:
-      'Los pagos con tarjeta llegan en el siguiente paso. Usa Bizum, transferencia o efectivo para esta solicitud.',
+    redirectingToCheckout: 'Redirigiendo al pago con tarjeta…',
+    checkoutError: 'No se pudo iniciar el pago. Inténtalo de nuevo.',
   },
   en: {
     backLabel: 'Back',
@@ -189,6 +190,7 @@ const COPY: Record<Locale, Copy> = {
       bizum_direct: 'Bizum',
       bank_transfer: 'Bank transfer',
       cash: 'Cash',
+      card: 'Credit/debit card',
     },
     relationshipLabels: {
       mama: 'Mom',
@@ -229,9 +231,8 @@ const COPY: Record<Locale, Copy> = {
     selectDesignTemplatePlaceholder: 'Select a design',
     selectPaymentMethodPlaceholder: 'Select payment method',
     charCount: (current, max) => `${current} / ${max}`,
-    cardComingSoonLabel: 'Card payment',
-    cardComingSoonDescription:
-      'Card payments are coming next. Use Bizum, bank transfer, or cash for this request.',
+    redirectingToCheckout: 'Redirecting to card payment…',
+    checkoutError: 'Could not start payment. Please try again.',
   },
 };
 
@@ -364,9 +365,41 @@ export function PurchaseForm({
   const initialState: PurchaseActionState = null;
   const [state, formAction, isPending] = useActionState(boundAction, initialState);
 
+  // Redirect to Stripe Checkout when action returns a checkout URL.
+  // useEffect must be called before any conditional returns (Rules of Hooks).
+  useEffect(() => {
+    if (
+      state !== null &&
+      state.ok &&
+      state.data.kind === 'stripe_checkout' &&
+      state.data.checkoutUrl
+    ) {
+      window.location.href = state.data.checkoutUrl;
+    }
+  }, [state]);
+
   const isCustomValue = giftCard.cardType === 'custom_value';
 
   if (state !== null && state.ok) {
+    if (state.data.kind === 'stripe_checkout') {
+      if (!state.data.checkoutUrl) {
+        return (
+          <div
+            role="alert"
+            className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+          >
+            {copy.checkoutError}
+          </div>
+        );
+      }
+      // useEffect above handles window.location.href redirect
+      return (
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center">
+          <p className="text-sm text-slate-600">{copy.redirectingToCheckout}</p>
+        </div>
+      );
+    }
+
     return (
       <SuccessPanel
         copy={copy}
@@ -698,6 +731,11 @@ export function PurchaseForm({
                   {copy.paymentMethodLabels[method]}
                 </option>
               ))}
+              {stripeCardAvailable && (
+                <option value="card">
+                  {copy.paymentMethodLabels['card']}
+                </option>
+              )}
             </select>
             {getFieldError(state, 'paymentMethod') && (
               <p id="paymentMethod-error" role="alert" className={errorClassName}>
@@ -705,21 +743,6 @@ export function PurchaseForm({
               </p>
             )}
           </div>
-
-          {/* Disabled informational card payment option — shown only when merchant is Stripe-ready */}
-          {stripeCardAvailable && (
-            <div
-              aria-disabled="true"
-              className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 opacity-60 cursor-not-allowed"
-            >
-              <p className="text-sm font-medium text-slate-500">
-                {copy.cardComingSoonLabel}
-              </p>
-              <p className="mt-0.5 text-xs text-slate-400">
-                {copy.cardComingSoonDescription}
-              </p>
-            </div>
-          )}
         </section>
 
         {/* ── Consent ── */}
