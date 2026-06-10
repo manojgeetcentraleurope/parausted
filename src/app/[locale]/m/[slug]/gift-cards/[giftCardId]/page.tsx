@@ -25,6 +25,7 @@ type MerchantRow = {
   slug: string;
   bizum_phone: string | null;
   bank_iban: string | null;
+  stripe_onboarded: boolean;
 };
 
 type GiftCardRow = {
@@ -49,7 +50,7 @@ async function fetchActiveMerchantBySlug(slug: string): Promise<MerchantRow | nu
 
   const { data, error } = await supabase
     .from('merchants')
-    .select('id, name, slug, bizum_phone, bank_iban')
+    .select('id, name, slug, bizum_phone, bank_iban, stripe_onboarded')
     .eq('slug', slug)
     .eq('status', 'active')
     .single();
@@ -229,6 +230,7 @@ export default async function PurchasePage({ params }: PageProps) {
           merchant={merchantDisplay}
           giftCard={giftCardDisplay}
           availablePaymentMethods={availablePaymentMethods}
+          stripeCardAvailable={merchant.stripe_onboarded}
         />
       </div>
     </main>

@@ -38,6 +38,7 @@ type PurchaseFormProps = {
   merchant: MerchantDisplayData;
   giftCard: GiftCardDisplayData;
   availablePaymentMethods: readonly DirectPaymentMethod[];
+  stripeCardAvailable: boolean;
 };
 
 // ---------------------------------------------------------------------------
@@ -85,6 +86,8 @@ type Copy = {
   selectDesignTemplatePlaceholder: string;
   selectPaymentMethodPlaceholder: string;
   charCount: (current: number, max: number) => string;
+  cardComingSoonLabel: string;
+  cardComingSoonDescription: string;
 };
 
 const COPY: Record<Locale, Copy> = {
@@ -155,6 +158,9 @@ const COPY: Record<Locale, Copy> = {
     selectDesignTemplatePlaceholder: 'Selecciona un diseño',
     selectPaymentMethodPlaceholder: 'Selecciona el método de pago',
     charCount: (current, max) => `${current} / ${max}`,
+    cardComingSoonLabel: 'Pago con tarjeta',
+    cardComingSoonDescription:
+      'Los pagos con tarjeta llegan en el siguiente paso. Usa Bizum, transferencia o efectivo para esta solicitud.',
   },
   en: {
     backLabel: 'Back',
@@ -223,6 +229,9 @@ const COPY: Record<Locale, Copy> = {
     selectDesignTemplatePlaceholder: 'Select a design',
     selectPaymentMethodPlaceholder: 'Select payment method',
     charCount: (current, max) => `${current} / ${max}`,
+    cardComingSoonLabel: 'Card payment',
+    cardComingSoonDescription:
+      'Card payments are coming next. Use Bizum, bank transfer, or cash for this request.',
   },
 };
 
@@ -342,6 +351,7 @@ export function PurchaseForm({
   merchant,
   giftCard,
   availablePaymentMethods,
+  stripeCardAvailable,
 }: PurchaseFormProps) {
   const copy = COPY[locale];
 
@@ -695,6 +705,21 @@ export function PurchaseForm({
               </p>
             )}
           </div>
+
+          {/* Disabled informational card payment option — shown only when merchant is Stripe-ready */}
+          {stripeCardAvailable && (
+            <div
+              aria-disabled="true"
+              className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 opacity-60 cursor-not-allowed"
+            >
+              <p className="text-sm font-medium text-slate-500">
+                {copy.cardComingSoonLabel}
+              </p>
+              <p className="mt-0.5 text-xs text-slate-400">
+                {copy.cardComingSoonDescription}
+              </p>
+            </div>
+          )}
         </section>
 
         {/* ── Consent ── */}
