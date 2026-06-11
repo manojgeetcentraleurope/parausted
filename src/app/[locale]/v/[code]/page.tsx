@@ -14,12 +14,18 @@ type VoucherPageProps = {
   params: Promise<{ locale: string; code: string }>;
 };
 
+type DeliveryEventRow = {
+  channel: string;
+  status: string;
+};
+
 type VoucherRow = {
   code: string;
   original_amount_cents: number;
   balance_cents: number;
   status: string;
   expires_at: string;
+  delivery_events: DeliveryEventRow[] | null;
   purchases: {
     recipient_name: string;
     sender_name: string;
@@ -74,6 +80,33 @@ function statusLabel(
   return map[status] ?? status;
 }
 
+function deliveryChannelLabel(
+  channel: string,
+  t: ReturnType<typeof getMessages>['voucher']
+): string {
+  const map: Record<string, string> = {
+    email: t.deliveryEmail,
+    whatsapp: t.deliveryWhatsapp,
+    sms: t.deliverySms,
+    pdf_download: t.deliveryPdfDownload,
+  };
+  return map[channel] ?? channel;
+}
+
+function deliveryStatusLabel(
+  status: string,
+  t: ReturnType<typeof getMessages>['voucher']
+): string {
+  const map: Record<string, string> = {
+    queued: t.deliveryQueued,
+    sent: t.deliverySent,
+    delivered: t.deliveryDelivered,
+    failed: t.deliveryFailed,
+    downloaded: t.deliveryDownloaded,
+  };
+  return map[status] ?? status;
+}
+
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
@@ -113,7 +146,8 @@ export default async function VoucherPage({ params }: VoucherPageProps) {
         sender_name,
         personal_message,
         merchants ( name )
-      )
+      ),
+      delivery_events ( channel, status )
     `
     )
     .eq('code', safeCode)
@@ -130,6 +164,7 @@ export default async function VoucherPage({ params }: VoucherPageProps) {
 
   const voucher = data as unknown as VoucherRow;
   const purchase = voucher.purchases;
+  const deliveryEvent = (voucher.delivery_events ?? [])[0] ?? null;
 
   const isExpired =
     voucher.status === 'expired' ||
@@ -214,6 +249,17 @@ export default async function VoucherPage({ params }: VoucherPageProps) {
             {statusLabel(voucher.status, t)}
           </span>
         </p>
+
+        {/* Delivery */}
+        {deliveryEvent && (
+          <p className="mt-1 text-sm">
+            <span className="font-medium text-gray-500">{t.delivery}: </span>
+            <span className="text-gray-700">
+              {deliveryChannelLabel(deliveryEvent.channel, t)} ·{' '}
+              {deliveryStatusLabel(deliveryEvent.status, t)}
+            </span>
+          </p>
+        )}
 
         {/* Code */}
         <div className="mt-6 rounded bg-gray-50 px-4 py-3 text-center">
