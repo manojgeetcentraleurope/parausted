@@ -35,6 +35,14 @@ const STATUS_COLOR: Record<string, string> = {
   voided: 'bg-gray-100 text-gray-800',
 };
 
+const DELIVERY_STATUS_COLOR: Record<string, string> = {
+  queued: 'bg-slate-100 text-slate-700',
+  sent: 'bg-blue-100 text-blue-800',
+  delivered: 'bg-green-100 text-green-800',
+  failed: 'bg-red-100 text-red-800',
+  downloaded: 'bg-cyan-100 text-cyan-800',
+};
+
 // --- Helpers ---
 
 function formatEur(cents: number, locale: Locale): string {
@@ -78,6 +86,21 @@ export function VoucherHistoryManager({
     exchanged: vs.statusExchanged,
     expired: vs.statusExpired,
     voided: vs.statusVoided,
+  };
+
+  const deliveryChannelLabel: Record<string, string> = {
+    email: t.deliveryEmail,
+    whatsapp: t.deliveryWhatsapp,
+    sms: t.deliverySms,
+    pdf_download: t.deliveryPdfDownload,
+  };
+
+  const deliveryStatusLabel: Record<string, string> = {
+    queued: t.deliveryQueued,
+    sent: t.deliverySent,
+    delivered: t.deliveryDelivered,
+    failed: t.deliveryFailed,
+    downloaded: t.deliveryDownloaded,
   };
 
   const [search, setSearch] = useState('');
@@ -136,6 +159,7 @@ export function VoucherHistoryManager({
               <tr className="border-b border-slate-200">
                 <th className="py-3 pr-4 font-medium text-slate-500">{t.code}</th>
                 <th className="py-3 pr-4 font-medium text-slate-500">{t.status}</th>
+                <th className="py-3 pr-4 font-medium text-slate-500">{t.delivery}</th>
                 <th className="py-3 pr-4 font-medium text-slate-500">{t.originalAmount}</th>
                 <th className="py-3 pr-4 font-medium text-slate-500">{t.balance}</th>
                 <th className="py-3 pr-4 font-medium text-slate-500">{t.recipient}</th>
@@ -161,6 +185,22 @@ export function VoucherHistoryManager({
                     >
                       {statusLabel[v.status] ?? v.status}
                     </span>
+                  </td>
+                  <td className="py-3 pr-4">
+                    {v.delivery_channel && v.delivery_status ? (
+                      <div className="flex flex-col gap-1">
+                        <span className="text-xs font-medium text-slate-700">
+                          {deliveryChannelLabel[v.delivery_channel] ?? v.delivery_channel}
+                        </span>
+                        <span
+                          className={`inline-block w-fit rounded-full px-2 py-0.5 text-xs font-medium ${DELIVERY_STATUS_COLOR[v.delivery_status] ?? 'bg-gray-100 text-gray-800'}`}
+                        >
+                          {deliveryStatusLabel[v.delivery_status] ?? v.delivery_status}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-slate-400">-</span>
+                    )}
                   </td>
                   <td className="py-3 pr-4 tabular-nums">
                     {formatEur(v.original_amount_cents, locale)}

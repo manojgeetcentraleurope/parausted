@@ -15,11 +15,22 @@ export type VoucherHistoryRow = {
   reference_code: string;
   recipient_name: string;
   last_redeemed_at: string | null;
+  delivery_channel: string | null;
+  delivery_status: string | null;
 };
 
 type ListVouchersResult =
   | { ok: true; vouchers: VoucherHistoryRow[] }
   | { ok: false; error: string };
+
+type DeliveryEventQueryRow = {
+  channel: string;
+  status: string;
+  queued_at: string | null;
+  sent_at: string | null;
+  delivered_at: string | null;
+  failed_at: string | null;
+};
 
 type VoucherQueryRow = {
   id: string;
@@ -31,6 +42,7 @@ type VoucherQueryRow = {
   issued_at: string;
   purchases: { reference_code: string; recipient_name: string } | null;
   redemptions: { redeemed_at: string }[] | null;
+  delivery_events: DeliveryEventQueryRow[] | null;
 };
 
 // --- Action ---
@@ -75,7 +87,8 @@ export async function listMerchantVouchers(): Promise<ListVouchersResult> {
       expires_at,
       issued_at,
       purchases ( reference_code, recipient_name ),
-      redemptions ( redeemed_at )
+      redemptions ( redeemed_at ),
+      delivery_events ( channel, status, queued_at, sent_at, delivered_at, failed_at )
     `
     )
     .eq('merchant_id', merchant.id)
@@ -90,6 +103,7 @@ export async function listMerchantVouchers(): Promise<ListVouchersResult> {
   const vouchers: VoucherHistoryRow[] = rows.map((r) => {
     const purchase = r.purchases;
     const redemptionRows = r.redemptions;
+    const deliveryEvent = (r.delivery_events ?? [])[0] ?? null;
     const dates = (redemptionRows ?? [])
       .map((rd) => rd.redeemed_at)
       .filter((d): d is string => typeof d === 'string' && d.length > 0);
@@ -107,6 +121,8 @@ export async function listMerchantVouchers(): Promise<ListVouchersResult> {
       reference_code: purchase?.reference_code ?? '',
       recipient_name: purchase?.recipient_name ?? '',
       last_redeemed_at: lastRedeemedAt,
+      delivery_channel: deliveryEvent?.channel ?? null,
+      delivery_status: deliveryEvent?.status ?? null,
     };
   });
 
