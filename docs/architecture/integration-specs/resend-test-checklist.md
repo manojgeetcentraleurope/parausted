@@ -1,5 +1,25 @@
 # Resend Controlled Test Checklist
 
+## Controlled Test Result - 2026-06-12
+
+Result: Passed.
+
+Evidence:
+- Worker mode: resend
+- Real recipients allowed: false
+- Sent to test recipient: true
+- Provider: Resend
+- Provider message id: 2a10dfce-b1ee-40a2-a499-5bdec9beb7ad
+- Delivery event status: sent
+- Email received in internal test mailbox
+- Voucher code rendered correctly
+- Voucher link rendered correctly
+
+Notes:
+- From address used Resend test sender: onboarding@resend.dev
+- Production rollout still requires verified ParaUsted sending domain.
+- Do not enable RESEND_ALLOW_REAL_RECIPIENTS=true until production rollout gate is approved.
+
 ## Status
 
 - Draft: follow these steps in a controlled test environment only.
