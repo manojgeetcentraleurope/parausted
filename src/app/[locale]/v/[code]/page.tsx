@@ -14,26 +14,18 @@ type VoucherPageProps = {
   params: Promise<{ locale: string; code: string }>;
 };
 
-type DeliveryEventRow = {
-  channel: string;
-  status: string;
-};
-
-type VoucherRow = {
+type PublicVoucherPageRow = {
   code: string;
   original_amount_cents: number;
   balance_cents: number;
   status: string;
   expires_at: string;
-  delivery_events: DeliveryEventRow[] | null;
-  purchases: {
-    recipient_name: string;
-    sender_name: string;
-    personal_message: string;
-    merchants: {
-      name: string;
-    } | null;
-  } | null;
+  recipient_name: string | null;
+  sender_name: string | null;
+  personal_message: string | null;
+  merchant_name: string | null;
+  delivery_channel: string | null;
+  delivery_status: string | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -133,28 +125,11 @@ export default async function VoucherPage({ params }: VoucherPageProps) {
   const supabase = await createSupabaseServerClient();
 
   const { data, error } = await supabase
-    .from('vouchers')
-    .select(
-      `
-      code,
-      original_amount_cents,
-      balance_cents,
-      status,
-      expires_at,
-      purchases (
-        recipient_name,
-        sender_name,
-        personal_message,
-        merchants ( name )
-      ),
-      delivery_events ( channel, status )
-    `
-    )
-    .eq('code', safeCode)
+    .rpc('get_public_voucher_page', { p_code: safeCode })
     .maybeSingle();
 
   if (error) {
-    console.error('[VoucherPage] query error:', { code: safeCode, message: error.message });
+    console.error('[VoucherPage] query error:', { message: error.message });
     notFound();
   }
 
@@ -162,9 +137,17 @@ export default async function VoucherPage({ params }: VoucherPageProps) {
     notFound();
   }
 
-  const voucher = data as unknown as VoucherRow;
-  const purchase = voucher.purchases;
-  const deliveryEvent = (voucher.delivery_events ?? [])[0] ?? null;
+  const voucher = data as unknown as PublicVoucherPageRow;
+  const purchase = {
+    recipient_name: voucher.recipient_name,
+    sender_name: voucher.sender_name,
+    personal_message: voucher.personal_message,
+    merchants: voucher.merchant_name ? { name: voucher.merchant_name } : null,
+  };
+  const deliveryEvent =
+    voucher.delivery_channel && voucher.delivery_status
+      ? { channel: voucher.delivery_channel, status: voucher.delivery_status }
+      : null;
 
   const isExpired =
     voucher.status === 'expired' ||
