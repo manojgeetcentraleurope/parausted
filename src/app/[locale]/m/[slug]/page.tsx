@@ -80,6 +80,15 @@ const CARD_TYPE_LABEL: Record<GiftCardType, Record<Locale, string>> = {
   service: { es: 'Servicio', en: 'Service' },
 };
 
+const CATEGORY_LABEL: Record<string, Record<Locale, string>> = {
+  barber: { es: 'Barbería', en: 'Barber' },
+  restaurant: { es: 'Restaurante', en: 'Restaurant' },
+  tour: { es: 'Tours y experiencias', en: 'Tours & Experiences' },
+  gym: { es: 'Gimnasio', en: 'Gym' },
+  school: { es: 'Academia', en: 'School' },
+  other: { es: 'Otro', en: 'Other' },
+};
+
 const OG_LOCALE: Record<Locale, string> = {
   es: 'es_ES',
   en: 'en_US',
@@ -224,7 +233,7 @@ export default async function MerchantPublicPage({ params }: MerchantPageProps) 
         )}
 
         <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-gray-500">
-          <span>{merchant.category}</span>
+          <span>{CATEGORY_LABEL[merchant.category]?.[locale] ?? merchant.category}</span>
           <span>{merchant.city}</span>
           {merchant.website_url !== null && (
             <a

@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import Link from 'next/link';
 
 import type { Locale } from '@/lib/i18n/config';
@@ -107,6 +107,8 @@ type Copy = {
   checkoutReadyTitle: string;
   checkoutReadyMessage: string;
   checkoutReadyLinkLabel: string;
+  legalDisclosure: string;
+  legalLinkLabel: string;
 };
 
 const COPY: Record<Locale, Copy> = {
@@ -190,6 +192,8 @@ const COPY: Record<Locale, Copy> = {
     checkoutReadyMessage:
       'Tu pago con tarjeta se ha confirmado y tu tarjeta regalo se ha emitido.',
     checkoutReadyLinkLabel: 'Ver tarjeta regalo',
+    legalDisclosure: 'Esta tarjeta se emitirá solo tras confirmar el pago. Consulta nuestra',
+    legalLinkLabel: 'política de validez y reembolso',
   },
   en: {
     backLabel: 'Back',
@@ -247,7 +251,7 @@ const COPY: Record<Locale, Copy> = {
     nextStepsLabel: 'Next steps',
     paymentInstructions: {
       bizum_direct: (phone, code) =>
-        `Send ${COPY.en.amountLabel} via Bizum to ${phone}. Include code ${code} in the payment concept.`,
+        `Send ${COPY.en.amountLabel} via Bizum to ${phone}. Include code ${code} as the payment reference.`,
       bank_transfer: (iban, code) =>
         `Transfer to IBAN ${iban}. Include code ${code} in the payment reference.`,
       cash: (code) =>
@@ -271,6 +275,8 @@ const COPY: Record<Locale, Copy> = {
     checkoutReadyMessage:
       'Your card payment was confirmed and your gift card has been issued.',
     checkoutReadyLinkLabel: 'View gift card',
+    legalDisclosure: 'Your gift card is issued only after payment is confirmed. Read our',
+    legalLinkLabel: 'validity and refund policy',
   },
 };
 
@@ -403,6 +409,7 @@ export function PurchaseForm({
 
   const initialState: PurchaseActionState = null;
   const [state, formAction, isPending] = useActionState(boundAction, initialState);
+  const [messageLength, setMessageLength] = useState(0);
 
   // Redirect to Stripe Checkout when action returns a checkout URL.
   // useEffect must be called before any conditional returns (Rules of Hooks).
@@ -733,10 +740,11 @@ export function PurchaseForm({
                 ]
                   .filter(Boolean)
                   .join(' ') || undefined}
+                onChange={(e) => setMessageLength(e.target.value.length)}
                 className={`${getFieldError(state, 'personalMessage') ? inputErrorClassName : inputClassName} min-h-28 resize-y`}
               />
               <p id="personalMessage-count" className={helperClassName} aria-live="polite">
-                {copy.charCount(0, 500)}
+                {copy.charCount(messageLength, 500)}
               </p>
               {getFieldError(state, 'personalMessage') && (
                 <p id="personalMessage-error" role="alert" className={errorClassName}>
@@ -818,6 +826,20 @@ export function PurchaseForm({
             )}
           </div>
         </section>
+
+        {/* ── Pre-submit disclosure ── */}
+        <p className="text-xs text-slate-500">
+          {copy.legalDisclosure}{' '}
+          <Link
+            href={`/${locale}/legal`}
+            className="underline hover:text-slate-700"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {copy.legalLinkLabel}
+          </Link>
+          .
+        </p>
 
         {/* ── Consent ── */}
         <div className="flex items-start gap-3">
