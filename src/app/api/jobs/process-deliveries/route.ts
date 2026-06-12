@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 import { processQueuedDeliveries } from '@/lib/delivery/delivery-orchestrator';
+import { isDeliveryWorkerMode } from '@/lib/delivery/types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,6 +12,26 @@ export const dynamic = 'force-dynamic';
 const MIN_BATCH_SIZE = 1;
 const MAX_BATCH_SIZE = 50;
 const DEFAULT_BATCH_SIZE = 5;
+
+function validateResendWorkerConfig():
+  | { ok: true }
+  | { ok: false; error: 'resend_not_configured' | 'resend_test_recipient_required' } {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  const fromEmail = process.env.RESEND_FROM_EMAIL?.trim();
+
+  if (!apiKey || !fromEmail) {
+    return { ok: false, error: 'resend_not_configured' };
+  }
+
+  const realRecipientAllowed = process.env.RESEND_ALLOW_REAL_RECIPIENTS === 'true';
+  const testRecipient = process.env.RESEND_TEST_RECIPIENT?.trim();
+
+  if (!realRecipientAllowed && !testRecipient) {
+    return { ok: false, error: 'resend_test_recipient_required' };
+  }
+
+  return { ok: true };
+}
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const enabled = process.env.DELIVERY_WORKER_ENABLED;
@@ -30,8 +51,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
 
-  if (mode !== 'dry_run') {
+  if (!mode || !isDeliveryWorkerMode(mode)) {
     return NextResponse.json({ ok: false, error: 'unsupported_worker_mode' }, { status: 400 });
+  }
+
+  if (mode === 'resend') {
+    const resendConfig = validateResendWorkerConfig();
+
+    if (!resendConfig.ok) {
+      return NextResponse.json({ ok: false, error: resendConfig.error }, { status: 503 });
+    }
   }
 
   // Parse batch size: env overrides default; request body can override env.
@@ -58,7 +87,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const workerId = randomUUID();
 
-  const summary = await processQueuedDeliveries({ workerId, batchSize, mode: 'dry_run' });
+  const summary = await processQueuedDeliveries({ workerId, batchSize, mode });
 
-  return NextResponse.json({ ok: true, mode: 'dry_run', ...summary });
+  return NextResponse.json({ ok: true, mode, ...summary });
 }

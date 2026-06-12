@@ -3,18 +3,23 @@ import 'server-only';
 import { supabaseAdminClient } from '@/lib/supabase/admin';
 
 import { loadDeliveryContext } from './delivery-context';
-import { DryRunEmailProvider } from './providers/dry-run-email-provider';
-import type { ClaimedDeliveryEvent, DeliveryWorkerSummary, ProcessDeliveryResult } from './types';
+import { createDeliveryProvider } from './providers/factory';
+import type {
+  ClaimedDeliveryEvent,
+  DeliveryWorkerMode,
+  DeliveryWorkerSummary,
+  ProcessDeliveryResult,
+} from './types';
 
 const LOCK_TIMEOUT_SECONDS = 900;
 
 export async function processQueuedDeliveries(options: {
   workerId: string;
   batchSize: number;
-  mode: 'dry_run';
+  mode: DeliveryWorkerMode;
 }): Promise<DeliveryWorkerSummary> {
-  const { workerId, batchSize } = options;
-  const provider = new DryRunEmailProvider();
+  const { workerId, batchSize, mode } = options;
+  const provider = createDeliveryProvider(mode);
 
   const { data: claimedRows, error: claimError } = await supabaseAdminClient.rpc(
     'claim_queued_delivery_events',

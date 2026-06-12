@@ -1,4 +1,10 @@
-export type DeliveryWorkerMode = 'dry_run';
+export const DELIVERY_WORKER_MODES = ['dry_run', 'resend'] as const;
+
+export type DeliveryWorkerMode = (typeof DELIVERY_WORKER_MODES)[number];
+
+export function isDeliveryWorkerMode(value: string): value is DeliveryWorkerMode {
+  return DELIVERY_WORKER_MODES.includes(value as DeliveryWorkerMode);
+}
 
 export type ClaimedDeliveryEvent = {
   delivery_event_id: string;
