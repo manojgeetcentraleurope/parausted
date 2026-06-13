@@ -46,7 +46,7 @@ const PAGE_COPY: Record<Locale, LegalCopy> = {
       },
       {
         heading: 'Validez de la tarjeta regalo',
-        body: 'Las tarjetas regalo son válidas durante el número de días indicado en la tarjeta, contado desde la fecha de emisión del vale. Puedes consultar el saldo, el estado y la fecha de vencimiento en la página de tu tarjeta regalo en cualquier momento.',
+        body: 'Las tarjetas regalo son válidas durante el número de días indicado en la tarjeta, contado desde la fecha de emisión del vale. Puedes consultar el saldo, el estado y la fecha de vencimiento en la página de tu tarjeta regalo en cualquier momento. Para tarjetas regalo de servicio, la tarjeta no reserva automáticamente una cita; la fecha, disponibilidad y prestación del servicio se acuerdan directamente con el comercio participante.',
       },
       {
         heading: 'Reembolsos y atención al comprador',
@@ -77,7 +77,7 @@ const PAGE_COPY: Record<Locale, LegalCopy> = {
       },
       {
         heading: 'Gift card validity',
-        body: 'Gift cards are valid for the number of days shown on the card, counted from the date of issuance. You can check the balance, status and expiry date on your gift card page at any time.',
+        body: 'Gift cards are valid for the number of days shown on the card, counted from the date of issuance. You can check the balance, status and expiry date on your gift card page at any time. For service gift cards, the card does not automatically book an appointment; scheduling, availability and service delivery are arranged directly with the participating merchant.',
       },
       {
         heading: 'Refunds and buyer support',

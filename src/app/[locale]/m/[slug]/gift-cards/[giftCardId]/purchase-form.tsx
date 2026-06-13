@@ -192,7 +192,7 @@ const COPY: Record<Locale, Copy> = {
     checkoutReadyMessage:
       'Tu pago con tarjeta se ha confirmado y tu tarjeta regalo se ha emitido.',
     checkoutReadyLinkLabel: 'Ver tarjeta regalo',
-    legalDisclosure: 'Esta tarjeta se emitirá solo tras confirmar el pago. Consulta nuestra',
+    legalDisclosure: 'Esta tarjeta se emitirá solo tras confirmar el pago. Para tarjetas de servicio, la cita y disponibilidad se acuerdan directamente con el comercio. Consulta nuestra',
     legalLinkLabel: 'política de validez y reembolso',
   },
   en: {
@@ -275,7 +275,7 @@ const COPY: Record<Locale, Copy> = {
     checkoutReadyMessage:
       'Your card payment was confirmed and your gift card has been issued.',
     checkoutReadyLinkLabel: 'View gift card',
-    legalDisclosure: 'Your gift card is issued only after payment is confirmed. Read our',
+    legalDisclosure: 'Your gift card is issued only after payment is confirmed. For service gift cards, scheduling and availability are arranged directly with the merchant. Read our',
     legalLinkLabel: 'validity and refund policy',
   },
 };
