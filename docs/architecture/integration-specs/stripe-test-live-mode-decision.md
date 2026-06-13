@@ -117,6 +117,26 @@ Default launch position:
 - Stripe is available only when production gates pass.
 - Stripe payment UI should be hidden or disabled when the global flag, merchant onboarding state, or production environment is not ready.
 
+### Controlled Pilot Platform Fee Position
+
+For the controlled V1 pilot, ParaUsted intentionally does not set `application_fee_amount` on Stripe Checkout Sessions.
+
+Pilot behavior:
+
+- Platform fee: 0%.
+- Stripe destination charge sends the payment to the connected merchant account.
+- Stripe processing costs may still apply according to Stripe and merchant account configuration.
+- ParaUsted does not promise this pilot fee position for broader production launch.
+
+Reason:
+
+- The first pilot prioritizes transaction safety, tourist/card validation, merchant trust, and operational learning.
+- Activating the commercial platform fee requires merchant-facing payout copy, refund handling expectations, reconciliation review, and explicit launch approval.
+
+Target post-pilot position:
+
+- ParaUsted may activate a 5% platform fee for online Stripe payments after pilot review.
+- Activation must be handled as a separate implementation slice with code change, merchant copy, smoke test evidence, and reconciliation notes.
 ### Tour Operator Pilot Position
 
 For the first tour operator pilot:
