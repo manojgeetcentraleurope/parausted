@@ -358,6 +358,54 @@ Required evidence:
 - Evidence link/notes: TODO
 - Blockers: TODO
 
+## Barber Manual Validation Evidence
+
+Date: 2026-06-13  
+Tester: Manoj  
+Merchant type: Barber  
+Decision: GREEN - Ready for controlled pilot  
+Status: PASS  
+
+Validated areas:
+
+- Spanish public merchant page passed.
+- English public merchant page passed.
+- Public merchant page showed a friendly localized barber category label.
+- Public merchant page SEO basics passed.
+- Spanish purchase page passed.
+- English purchase page passed.
+- Spanish local direct-payment flow passed.
+- Bizum option appeared only when merchant Bizum phone was configured.
+- Bank transfer option appeared only when merchant IBAN was configured.
+- Cash option behavior was accepted for the controlled barber pilot.
+- Card option appeared only when merchant Stripe readiness conditions were met.
+- Apple Pay and Google Pay were not promised unless configured and tested.
+- Legal disclosure and localized legal link passed.
+- Consent checkbox remained unchecked by default.
+- Personal message counter passed.
+- Pending purchase creation passed.
+- Reference code display passed.
+- Payment instructions appeared only after pending purchase success.
+- Bizum and bank details were not exposed before successful pending purchase creation.
+- Merchant pending-purchase dashboard passed.
+- Expired pending purchases were not confirm-actionable.
+- Valid offline payment confirmation passed.
+- Cancel/reject action was available where appropriate.
+- Voucher issuance after confirmation passed.
+- Public voucher page passed.
+- Voucher amount/status visibility passed.
+- Public voucher page did not expose contact PII.
+- Voucher page noindex/nofollow behavior passed.
+- Merchant redemption passed.
+- Second redemption attempt behaved safely.
+- Mobile checks passed for merchant page, purchase page, voucher page, and merchant dashboard purchase confirmation.
+- No pilot-blocking gaps found.
+
+Notes:
+
+- Cash is currently always available as an offline option. This is accepted for the controlled barber pilot and can be revisited later if merchant-level cash enablement is needed.
+- Stripe is optional for the barber pilot. The direct/offline payment path is sufficient for controlled launch.
+- No code change is required from this validation.
 ## Pilot 3 - Driving Class Checklist
 
 ### Recommended Launch Position
