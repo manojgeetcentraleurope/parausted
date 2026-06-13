@@ -115,7 +115,7 @@ export function SignupForm({ loginPath, messages, nextPath }: SignupFormProps) {
   }
 
   return (
-    <form className="space-y-5" onSubmit={handleSignup}>
+    <form className="space-y-5" noValidate onSubmit={handleSignup}>
       <div className="space-y-2">
         <p className="text-sm font-semibold uppercase tracking-[0.35em] text-cyan-700">
           {messages.common.appName}

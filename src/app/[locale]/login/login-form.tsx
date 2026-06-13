@@ -144,7 +144,7 @@ router.refresh();
   }
 
   return (
-    <form className="space-y-5" onSubmit={handlePasswordLogin}>
+    <form className="space-y-5" noValidate onSubmit={handlePasswordLogin}>
       <div className="space-y-2">
         <p className="text-sm font-semibold uppercase tracking-[0.35em] text-cyan-700">
           {messages.common.appName}

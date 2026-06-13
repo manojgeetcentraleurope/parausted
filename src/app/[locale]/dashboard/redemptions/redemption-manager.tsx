@@ -66,6 +66,11 @@ export function RedemptionManager({ messages, locale }: RedemptionManagerProps) 
 
     const normalizedCode = normalizeCode(code);
 
+    if (normalizedCode.length === 0) {
+      setErrorKey('invalid_code');
+      return;
+    }
+
     startTransition(async () => {
       const result = await redeemVoucherFull(normalizedCode, notes.trim() || undefined);
 
@@ -109,7 +114,7 @@ export function RedemptionManager({ messages, locale }: RedemptionManagerProps) 
         </div>
       )}
 
-      <form className="mt-6 flex flex-col gap-5" onSubmit={handleSubmit}>
+      <form className="mt-6 flex flex-col gap-5" noValidate onSubmit={handleSubmit}>
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-slate-700" htmlFor="voucher-code">
             {t.voucherCodeLabel}
