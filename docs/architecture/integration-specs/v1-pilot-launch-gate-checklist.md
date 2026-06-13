@@ -439,6 +439,60 @@ Required evidence:
 - Evidence link/notes: TODO
 - Blockers: TODO
 
+## Driving Class Manual Validation Evidence
+
+Date: 2026-06-13  
+Tester: Manoj  
+Merchant type: Driving class  
+Decision: GREEN - Ready for controlled pilot  
+Status: PASS  
+
+Validated areas:
+
+- Spanish public merchant page passed.
+- English public merchant page passed.
+- Public merchant page SEO basics passed.
+- Spanish service gift-card purchase page passed.
+- English service gift-card purchase page passed.
+- Service gift-card scheduling disclosure passed.
+- Legal page service scheduling wording passed.
+- Validity and expiry wording remained conservative.
+- Refund and goodwill wording remained case-by-case and conservative.
+- Privacy wording remained purpose-limited.
+- Offline payment responsibility was clear.
+- Bizum option appeared only when merchant Bizum phone was configured.
+- Bank transfer option appeared only when merchant IBAN was configured.
+- Cash option behavior was accepted for the controlled driving class pilot.
+- Card option appeared only when merchant Stripe readiness conditions were met.
+- Apple Pay and Google Pay were not promised unless configured and tested.
+- Legal disclosure and localized legal link passed.
+- Consent checkbox remained unchecked by default.
+- Personal message counter passed.
+- Pending purchase creation passed.
+- Reference code display passed.
+- Payment instructions appeared only after pending purchase success.
+- Bizum and bank details were not exposed before successful pending purchase creation.
+- Merchant pending-purchase dashboard passed.
+- Expired pending purchases were not confirm-actionable.
+- Valid offline payment confirmation passed.
+- Cancel/reject action was available where appropriate.
+- Voucher issuance after confirmation passed.
+- Public voucher page passed.
+- Voucher amount/status visibility passed.
+- Public voucher page did not expose contact PII.
+- Voucher page noindex/nofollow behavior passed.
+- Merchant redemption passed.
+- Second redemption attempt behaved safely.
+- Mobile checks passed for merchant page, purchase page, voucher page, and merchant dashboard purchase confirmation.
+- No pilot-blocking gaps found after service scheduling wording update.
+
+Notes:
+
+- Driving class is a higher-trust service vertical. Scheduling and availability wording is now explicitly visible in purchase/legal copy.
+- Full redemption only remains accepted for the controlled V1 pilot and must be explained to the merchant operationally.
+- Partial redemption remains deferred.
+- Stripe platform fee is intentionally waived for the controlled pilot and documented separately.
+- No further code change is required from this validation.
 ## Launch Evidence Log Template
 
 Use this format for each completed test:
