@@ -411,6 +411,42 @@ Issues found:
 Decision:
 ```
 
+## Tour Operator Manual Validation Evidence
+
+Date: 2026-06-13  
+Tester: Manoj  
+Merchant type: Tour operator  
+Decision: GREEN - Ready for controlled pilot  
+Status: PASS  
+
+Validated areas:
+
+- Spanish public merchant page passed.
+- English public merchant page passed.
+- Spanish purchase page passed.
+- English purchase page passed.
+- Legal disclosure and localized legal link passed.
+- Consent checkbox remained unchecked by default.
+- Payment method visibility passed.
+- Pending purchase creation passed.
+- Reference code display passed.
+- Payment instructions appeared only after pending purchase success.
+- Merchant pending-purchase dashboard passed.
+- Valid offline payment confirmation passed.
+- Voucher issuance after confirmation passed.
+- Public voucher page passed.
+- Voucher amount/status visibility passed.
+- Public voucher page did not expose contact PII.
+- Merchant redemption passed.
+- Second redemption attempt behaved safely.
+- Mobile checks passed for merchant, purchase, and voucher pages.
+- No pilot-blocking gaps found.
+
+Notes:
+
+- Cash is currently always available as an offline option. This is accepted for the controlled tour operator pilot and can be revisited later if merchant-level cash enablement is needed.
+- Stripe platform fee is intentionally waived for the controlled pilot and documented separately.
+- No code change is required from this validation.
 ## Known Allowed Limitations For Controlled V1 Pilot
 
 The following limitations are acceptable if clearly understood and not promised as completed:
