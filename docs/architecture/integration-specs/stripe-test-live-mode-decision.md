@@ -137,6 +137,7 @@ Target post-pilot position:
 
 - ParaUsted may activate a 5% platform fee for online Stripe payments after pilot review.
 - Activation must be handled as a separate implementation slice with code change, merchant copy, smoke test evidence, and reconciliation notes.
+
 ### Tour Operator Pilot Position
 
 For the first tour operator pilot:
