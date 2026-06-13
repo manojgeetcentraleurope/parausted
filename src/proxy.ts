@@ -55,8 +55,16 @@ function applySupabaseResponse(
 export async function proxy(request: NextRequest) {
   const supabaseUrl = requireEnv('NEXT_PUBLIC_SUPABASE_URL');
   const supabasePublishableKey = requireEnv('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY');
+  // Derive locale before the Supabase client so the detected value can be
+  // forwarded as a request header. Server Components read 'x-locale' via
+  // next/headers to set the html lang attribute without a second round-trip.
+  const pathname = normalizeLocalizedPath(request.nextUrl.pathname);
+  const detectedLocale = getLocaleFromPathname(pathname) ?? DEFAULT_LOCALE;
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-locale', detectedLocale);
+
   const responseHeaders = new Headers();
-  let response = NextResponse.next({ request: { headers: request.headers } });
+  let response = NextResponse.next({ request: { headers: requestHeaders } });
 
   const supabase = createServerClient(supabaseUrl, supabasePublishableKey, {
     cookies: {
@@ -75,7 +83,7 @@ export async function proxy(request: NextRequest) {
           }
         }
 
-        response = NextResponse.next({ request: { headers: request.headers } });
+        response = NextResponse.next({ request: { headers: requestHeaders } });
 
         for (const { name, value, options } of cookiesToSet) {
           response.cookies.set(name, value, options);
@@ -88,8 +96,6 @@ export async function proxy(request: NextRequest) {
       },
     },
   });
-
-  const pathname = normalizeLocalizedPath(request.nextUrl.pathname);
 
   if (pathname === '/') {
     const redirectUrl = request.nextUrl.clone();
