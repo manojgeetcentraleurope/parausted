@@ -66,6 +66,25 @@ const activeSchema = z.preprocess((value) => {
   return true;
 }, z.boolean());
 
+const voucherCodePrefixSchema = z
+  .string()
+  .trim()
+  .transform((v) => v.toUpperCase())
+  .transform((v) => (v.length === 0 ? undefined : v))
+  .optional()
+  .pipe(
+    z
+      .string()
+      .min(2, 'Code prefix must be at least 2 characters.')
+      .max(20, 'Code prefix must be at most 20 characters.')
+      .regex(
+        /^[A-Z0-9]+(-[A-Z0-9]+)*$/,
+        'Code prefix must contain only uppercase letters, digits, and hyphens (e.g. ST-GC-LUX).',
+      )
+      .refine((v) => v !== 'PU', 'PU is reserved and cannot be used as a custom prefix.')
+      .optional(),
+  );
+
 const giftCardBaseSchema = z
   .object({
     cardType: z.enum(GIFT_CARD_TYPES),
@@ -73,6 +92,7 @@ const giftCardBaseSchema = z
     titleEn: createOptionalTextSchema(120),
     description: createOptionalTextSchema(1000),
     descriptionEn: createOptionalTextSchema(1000),
+    voucherCodePrefix: voucherCodePrefixSchema,
     amount: createOptionalEuroAmountSchema('Amount'),
     minAmount: createOptionalEuroAmountSchema('Minimum amount'),
     maxAmount: createOptionalEuroAmountSchema('Maximum amount'),
@@ -156,6 +176,7 @@ const giftCardBaseSchema = z
         title_en: value.titleEn,
         description: value.description,
         description_en: value.descriptionEn,
+        voucher_code_prefix: value.voucherCodePrefix,
         amount_cents: undefined,
         min_amount_cents: value.minAmount,
         max_amount_cents: value.maxAmount,
@@ -170,6 +191,7 @@ const giftCardBaseSchema = z
       title_en: value.titleEn,
       description: value.description,
       description_en: value.descriptionEn,
+      voucher_code_prefix: value.voucherCodePrefix,
       amount_cents: value.amount,
       min_amount_cents: undefined,
       max_amount_cents: undefined,

@@ -40,6 +40,7 @@ type GiftCardRow = {
   title_en: string | null;
   description: string | null;
   description_en: string | null;
+  voucher_code_prefix: string | null;
   amount_cents: number | null;
   min_amount_cents: number | null;
   max_amount_cents: number | null;
@@ -207,6 +208,8 @@ const GIFT_CARD_COPY: Record<Locale, GiftCardSectionCopy> = {
         description: 'Descripción',
         titleEn: 'Título en inglés (opcional)',
         descriptionEn: 'Descripción en inglés (opcional)',
+        voucherCodePrefix: 'Prefijo del código',
+        voucherCodePrefixHelp: 'Opcional. Ejemplo: ST-GC-LUX. Vacío usa el prefijo PU por defecto.',
         amount: 'Importe',
         minAmount: 'Importe mínimo',
         maxAmount: 'Importe máximo',
@@ -249,6 +252,8 @@ const GIFT_CARD_COPY: Record<Locale, GiftCardSectionCopy> = {
         description: 'Description',
         titleEn: 'English title (optional)',
         descriptionEn: 'English description (optional)',
+        voucherCodePrefix: 'Code prefix',
+        voucherCodePrefixHelp: 'Optional. Example: ST-GC-LUX. Empty uses the default PU prefix.',
         amount: 'Amount',
         minAmount: 'Min amount',
         maxAmount: 'Max amount',
@@ -341,7 +346,7 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
 
   const { data: giftCardsRaw } = await supabase
     .from('gift_cards')
-    .select('id, card_type, title, title_en, description, description_en, amount_cents, min_amount_cents, max_amount_cents, valid_days, active')
+    .select('id, card_type, title, title_en, description, description_en, voucher_code_prefix, amount_cents, min_amount_cents, max_amount_cents, valid_days, active')
     .eq('merchant_id', merchant.id)
     .order('created_at', { ascending: false });
 

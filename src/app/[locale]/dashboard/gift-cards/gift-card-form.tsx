@@ -27,6 +27,8 @@ export type GiftCardFormCopy = {
     titleEn: string;
     description: string;
     descriptionEn: string;
+    voucherCodePrefix: string;
+    voucherCodePrefixHelp: string;
     amount: string;
     minAmount: string;
     maxAmount: string;
@@ -62,6 +64,7 @@ export type GiftCardFormValues = {
   titleEn: string;
   description: string;
   descriptionEn: string;
+  voucherCodePrefix: string;
   amount: string;
   minAmount: string;
   maxAmount: string;
@@ -79,6 +82,7 @@ const DEFAULT_FORM_VALUES: GiftCardFormValues = {
   titleEn: '',
   description: '',
   descriptionEn: '',
+  voucherCodePrefix: '',
   amount: '',
   minAmount: '',
   maxAmount: '',
@@ -249,8 +253,38 @@ export function GiftCardForm({
         </div>
 
         {/* ---------------------------------------------------------------- */}
-        {/* Description                                                       */}
+        {/* Voucher code prefix (optional)                                    */}
         {/* ---------------------------------------------------------------- */}
+        <div>
+          <label htmlFor="voucherCodePrefix" className={LABEL_CLASSES}>
+            {copy.fields.voucherCodePrefix}
+          </label>
+          <input
+            id="voucherCodePrefix"
+            name="voucherCodePrefix"
+            type="text"
+            value={formValues.voucherCodePrefix}
+            onChange={(e) =>
+              handleChange('voucherCodePrefix', e.target.value.toUpperCase())
+            }
+            placeholder="ST-GC-LUX"
+            maxLength={20}
+            aria-describedby={
+              fieldErrors['voucherCodePrefix'] !== undefined
+                ? 'voucherCodePrefix-hint voucherCodePrefix-error'
+                : 'voucherCodePrefix-hint'
+            }
+            className={INPUT_CLASSES}
+          />
+          <p id="voucherCodePrefix-hint" className={HINT_CLASSES}>
+            {copy.fields.voucherCodePrefixHelp}
+          </p>
+          {fieldErrors['voucherCodePrefix'] !== undefined && (
+            <p id="voucherCodePrefix-error" role="alert" className={ERROR_CLASSES}>
+              {fieldErrors['voucherCodePrefix'].join(' ')}
+            </p>
+          )}
+        </div>
         <div>
           <label htmlFor="description" className={LABEL_CLASSES}>
             {copy.fields.description}
