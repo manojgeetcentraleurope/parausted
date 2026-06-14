@@ -1,6 +1,7 @@
 'use server';
 
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { resolveOnlineRefund, type RefundOutcome } from '@/lib/stripe/refunds';
 import { maskEmail } from '@/lib/utils/mask-email';
 
 // ─── Types ────────────────────────────────────────────────────────
@@ -317,4 +318,145 @@ export async function refundPurchase(
   }
 
   return { success: false, error: result?.error ?? 'unknown' };
+}
+
+// ─── Refund Online Purchase (Stripe card, two-phase saga) ───────
+
+type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
+
+interface BeginOnlineRefundResult {
+  success?: boolean;
+  error?: string;
+  stripe_payment_intent_id?: string;
+  stripe_refund_id?: string | null;
+  amount_cents?: number;
+  reference_code?: string;
+}
+
+interface FinalizeOnlineRefundResult {
+  success?: boolean;
+  error?: string;
+  failure_code?: string;
+}
+
+/**
+ * Finalize an online refund as failed. The voucher stays voided; the purchase
+ * moves to refund_failed so support can retry the deterministic refund.
+ *
+ * Returns true only when the failure transition actually completed. If the RPC
+ * errored or did not transition, the purchase may still be refund_pending, and
+ * callers must surface 'unknown' rather than 'refund_failed'.
+ */
+async function finalizeOnlineRefundFailure(
+  supabase: SupabaseServerClient,
+  purchaseId: string,
+  failureCode: string,
+): Promise<boolean> {
+  const { data, error } = await supabase.rpc('finalize_online_refund', {
+    p_purchase_id: purchaseId,
+    p_succeeded: false,
+    p_stripe_refund_id: null,
+    p_failure_code: failureCode,
+  });
+
+  if (error) {
+    console.error('[refundOnlinePurchase] finalize failure rpc error:', error.message);
+    return false;
+  }
+
+  // The failure path returns success:false with error:'refund_failed'; a
+  // completed transition is signalled by that exact error code.
+  const result = data as FinalizeOnlineRefundResult | null;
+  return result?.error === 'refund_failed';
+}
+
+export async function refundOnlinePurchase(
+  purchaseId: string,
+  reason: string,
+): Promise<MutatePurchaseResult> {
+  // 1. Validate auth + merchant ownership
+  const auth = await getMerchantIdForUser();
+  if (auth.error || !auth.merchantId || !auth.userId) {
+    return { success: false, error: 'unauthorized' };
+  }
+
+  // 2. Reason is required (non-empty after trim) before touching the RPC
+  const trimmedReason = (reason ?? '').trim();
+  if (trimmedReason.length === 0) {
+    return { success: false, error: 'invalid_reason' };
+  }
+
+  const supabase = await createSupabaseServerClient();
+
+  // 3. Phase 1: void voucher + move purchase to refund_pending (re-entrant)
+  const { data: beginData, error: beginErr } = await supabase.rpc('begin_online_refund', {
+    p_purchase_id: purchaseId,
+    p_reason: trimmedReason,
+  });
+
+  if (beginErr) {
+    console.error('[refundOnlinePurchase] begin rpc failed:', beginErr.message);
+    return { success: false, error: 'unknown' };
+  }
+
+  const begin = beginData as BeginOnlineRefundResult | null;
+  if (!begin?.success) {
+    return { success: false, error: begin?.error ?? 'unknown' };
+  }
+
+  const paymentIntentId = begin.stripe_payment_intent_id;
+  const amountCents = begin.amount_cents;
+
+  // Defensive: a successful begin must return these. Treat as failure.
+  if (!paymentIntentId || typeof amountCents !== 'number') {
+    const finalized = await finalizeOnlineRefundFailure(supabase, purchaseId, 'stripe_refund_error');
+    return { success: false, error: finalized ? 'refund_failed' : 'unknown' };
+  }
+
+  // 4. Stripe phase: recovery-first refund resolution (may throw)
+  let outcome: RefundOutcome;
+  try {
+    outcome = await resolveOnlineRefund({
+      purchaseId,
+      paymentIntentId,
+      amountCents,
+      existingRefundId: begin.stripe_refund_id ?? null,
+    });
+  } catch {
+    // No raw Stripe message/PII/ids in logs — stable code only.
+    console.error('[refundOnlinePurchase] stripe refund error', { code: 'stripe_refund_error' });
+    const finalized = await finalizeOnlineRefundFailure(supabase, purchaseId, 'stripe_refund_error');
+    return { success: false, error: finalized ? 'refund_failed' : 'unknown' };
+  }
+
+  // 5a. Pending: leave purchase in refund_pending; do NOT finalize either way
+  if (outcome.kind === 'pending') {
+    return { success: false, error: 'refund_pending' };
+  }
+
+  // 5b. Failed/canceled: finalize as failed; voucher stays voided
+  if (outcome.kind === 'failed') {
+    const finalized = await finalizeOnlineRefundFailure(supabase, purchaseId, outcome.failureCode);
+    return { success: false, error: finalized ? 'refund_failed' : 'unknown' };
+  }
+
+  // 5c. Succeeded: finalize as refunded and store the Stripe refund id
+  const { data: finData, error: finErr } = await supabase.rpc('finalize_online_refund', {
+    p_purchase_id: purchaseId,
+    p_succeeded: true,
+    p_stripe_refund_id: outcome.refundId,
+    p_failure_code: null,
+  });
+
+  if (finErr) {
+    console.error('[refundOnlinePurchase] finalize success rpc failed:', finErr.message);
+    return { success: false, error: 'unknown' };
+  }
+
+  const fin = finData as FinalizeOnlineRefundResult | null;
+  if (fin?.success) {
+    return { success: true };
+  }
+
+  return { success: false, error: fin?.error ?? 'unknown' };
 }
