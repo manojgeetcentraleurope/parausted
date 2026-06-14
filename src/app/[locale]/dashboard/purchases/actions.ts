@@ -90,6 +90,36 @@ async function assertOfflinePendingPurchase(
   return { valid: true };
 }
 
+/**
+ * Guard for merchant refund/void action.
+ * Only OFFLINE purchases that already have a confirmed payment may be refunded
+ * from this center. ONLINE/card refunds are deferred to the Stripe slice.
+ */
+async function assertOfflineConfirmedPurchase(
+  purchaseId: string,
+  merchantId: string,
+): Promise<{ valid: true } | { valid: false; error: string }> {
+  const supabase = await createSupabaseServerClient();
+
+  const { data } = await supabase
+    .from('purchases')
+    .select('status, payment_source')
+    .eq('id', purchaseId)
+    .eq('merchant_id', merchantId)
+    .single();
+
+  if (!data) return { valid: false, error: 'not_found' };
+  if (data.payment_source !== 'OFFLINE') return { valid: false, error: 'invalid_payment_source' };
+  if (data.status !== 'payment_confirmed') {
+    if (['refunded', 'cancelled', 'partially_refunded'].includes(data.status as string)) {
+      return { valid: false, error: 'already_processed' };
+    }
+    return { valid: false, error: 'not_refundable' };
+  }
+
+  return { valid: true };
+}
+
 // ─── List Pending Purchases ──────────────────────────────────────
 
 export async function listPendingPurchases(
@@ -119,7 +149,7 @@ export async function listPendingPurchases(
     `
     )
     .eq('merchant_id', merchantId)
-    .in('status', ['pending'])
+    .in('status', ['pending', 'payment_confirmed'])
     .eq('payment_source', 'OFFLINE')
     .order('created_at', { ascending: false });
 
@@ -232,6 +262,55 @@ export async function rejectPurchase(
   }
 
   const result = data as { success?: boolean; error?: string } | null;
+
+  if (result?.success) {
+    return { success: true };
+  }
+
+  return { success: false, error: result?.error ?? 'unknown' };
+}
+
+// ─── Refund / Void Purchase (offline, DB-state only) ────────────
+
+export async function refundPurchase(
+  purchaseId: string,
+  reason: string
+): Promise<MutatePurchaseResult> {
+  // 1. Validate auth + merchant ownership
+  const auth = await getMerchantIdForUser();
+  if (auth.error || !auth.merchantId || !auth.userId) {
+    return { success: false, error: 'unauthorized' };
+  }
+
+  // 2. Reason is required (non-empty after trim) before touching the RPC
+  const trimmedReason = (reason ?? '').trim();
+  if (trimmedReason.length === 0) {
+    return { success: false, error: 'invalid_reason' };
+  }
+
+  const supabase = await createSupabaseServerClient();
+
+  // 3. Guard: only OFFLINE payment_confirmed purchases may be refunded
+  const guard = await assertOfflineConfirmedPurchase(purchaseId, auth.merchantId);
+  if (!guard.valid) {
+    return { success: false, error: guard.error };
+  }
+
+  const { data, error: rpcErr } = await supabase.rpc('refund_offline_purchase', {
+    p_purchase_id: purchaseId,
+    p_reason: trimmedReason,
+  });
+
+  if (rpcErr) {
+    console.error('[refundPurchase] rpc failed:', rpcErr.message);
+    return { success: false, error: 'unknown' };
+  }
+
+  const result = data as {
+    success?: boolean;
+    error?: string;
+    refund_type?: string;
+  } | null;
 
   if (result?.success) {
     return { success: true };

@@ -5,6 +5,7 @@ import {
   listPendingPurchases,
   confirmPurchase,
   rejectPurchase,
+  refundPurchase,
   type PendingPurchaseRow,
 } from './actions';
 import type { MessagesShape } from '@/lib/i18n/messages/es';
@@ -57,6 +58,30 @@ function ExpiryBadge({
   const now = new Date();
   const hoursLeft = Math.max(0, Math.round((expiry.getTime() - now.getTime()) / 3_600_000));
   return <span className="text-xs text-gray-500">{hoursLeft}h</span>;
+}
+
+function StatusBadge({
+  status,
+  t,
+}: {
+  status: string;
+  t: MessagesShape['purchases'];
+}) {
+  const labels: Record<string, string> = {
+    pending: t.statusPending,
+    payment_confirmed: t.statusPaymentConfirmed,
+  };
+  const colors: Record<string, string> = {
+    pending: 'bg-amber-100 text-amber-800',
+    payment_confirmed: 'bg-green-100 text-green-800',
+  };
+  return (
+    <span
+      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${colors[status] ?? 'bg-gray-100 text-gray-800'}`}
+    >
+      {labels[status] ?? status}
+    </span>
+  );
 }
 
 // ─── Confirm Dialog ──────────────────────────────────────────────
@@ -166,6 +191,68 @@ function RejectDialog({
   );
 }
 
+// ─── Refund Dialog ───────────────────────────────────────────────
+
+function RefundDialog({
+  purchase,
+  t,
+  onRefund,
+  onCancel,
+  isPending,
+}: {
+  purchase: PendingPurchaseRow;
+  t: MessagesShape['purchases'];
+  onRefund: (reason: string) => void;
+  onCancel: () => void;
+  isPending: boolean;
+}) {
+  const [reason, setReason] = useState('');
+  const trimmed = reason.trim();
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+        <h3 className="text-lg font-semibold text-red-700">{t.refundTitle}</h3>
+        <p className="mt-2 text-sm text-gray-600">{t.refundMessage}</p>
+        <p className="mt-3 text-sm">
+          <strong>{t.referenceCode}:</strong> {purchase.reference_code}
+        </p>
+        <p className="text-sm">
+          <strong>{t.amount}:</strong> €{(purchase.amount_cents / 100).toFixed(2)}
+        </p>
+        <label className="mt-4 block text-sm font-medium">
+          {t.refundReasonLabel}
+          <textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            maxLength={500}
+            rows={2}
+            placeholder={t.refundReasonPlaceholder}
+            className="mt-1 block w-full rounded border p-2 text-sm"
+          />
+        </label>
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isPending}
+            className="rounded border px-4 py-2 text-sm hover:bg-gray-50"
+          >
+            {t.cancel}
+          </button>
+          <button
+            type="button"
+            onClick={() => onRefund(trimmed)}
+            disabled={isPending || trimmed.length === 0}
+            className="rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+          >
+            {isPending ? '...' : t.refund}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ──────────────────────────────────────────────
 
 interface PurchaseManagerProps {
@@ -187,6 +274,7 @@ export function PurchaseManager({ messages, locale }: PurchaseManagerProps) {
   // Dialog state
   const [confirmTarget, setConfirmTarget] = useState<PendingPurchaseRow | null>(null);
   const [rejectTarget, setRejectTarget] = useState<PendingPurchaseRow | null>(null);
+  const [refundTarget, setRefundTarget] = useState<PendingPurchaseRow | null>(null);
 
   // ── Fetch ──────────────────────────────────────────────────────
   const refresh = useCallback(() => {
@@ -261,6 +349,40 @@ export function PurchaseManager({ messages, locale }: PurchaseManagerProps) {
     });
   }
 
+  function handleRefund(reason: string) {
+    if (!refundTarget) return;
+    const id = refundTarget.id;
+    setRefundTarget(null);
+    startTransition(async () => {
+      const result = await refundPurchase(id, reason);
+      if (result.success) {
+        setFeedback({ type: 'success', text: t.successRefunded });
+      } else {
+        const errKey = result.error;
+        const msg =
+          errKey === 'invalid_reason'
+            ? t.errorInvalidReason
+            : errKey === 'invalid_payment_source'
+              ? t.errorInvalidPaymentSource
+              : errKey === 'not_refundable'
+                ? t.errorNotRefundable
+                : errKey === 'has_redemptions'
+                  ? t.errorHasRedemptions
+                  : errKey === 'state_invalid'
+                    ? t.errorStateInvalid
+                    : errKey === 'already_processed'
+                      ? t.errorAlreadyProcessed
+                      : errKey === 'not_found'
+                        ? t.errorNotFound
+                        : errKey === 'unauthorized'
+                          ? t.errorUnauthorized
+                          : t.errorUnknown;
+        setFeedback({ type: 'error', text: msg });
+      }
+      refresh();
+    });
+  }
+
   // ── Auto-clear feedback ────────────────────────────────────────
   useEffect(() => {
     if (!feedback) return;
@@ -327,12 +449,16 @@ export function PurchaseManager({ messages, locale }: PurchaseManagerProps) {
                 <th className="px-3 py-2">{t.recipientName}</th>
                 <th className="px-3 py-2">{t.createdAt}</th>
                 <th className="px-3 py-2">{t.expiresAt}</th>
+                <th className="px-3 py-2">{t.status}</th>
                 <th className="px-3 py-2"></th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {purchases.map((p) => (
-                <tr key={p.id} className={p.is_expired ? 'bg-red-50/40' : ''}>
+                <tr
+                  key={p.id}
+                  className={p.status === 'pending' && p.is_expired ? 'bg-red-50/40' : ''}
+                >
                   <td className="whitespace-nowrap px-3 py-2 font-mono text-xs">
                     {p.reference_code}
                   </td>
@@ -349,25 +475,45 @@ export function PurchaseManager({ messages, locale }: PurchaseManagerProps) {
                     {new Date(p.created_at).toLocaleString()}
                   </td>
                   <td className="px-3 py-2">
-                    <ExpiryBadge expiresAt={p.expires_at} isExpired={p.is_expired} t={t} />
+                    {p.status === 'pending' ? (
+                      <ExpiryBadge expiresAt={p.expires_at} isExpired={p.is_expired} t={t} />
+                    ) : (
+                      <span className="text-xs text-gray-400">—</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2">
+                    <StatusBadge status={p.status} t={t} />
                   </td>
                   <td className="whitespace-nowrap px-3 py-2">
-                    {!p.is_expired && (
+                    {p.status === 'pending' && (
+                      <>
+                        {!p.is_expired && (
+                          <button
+                            type="button"
+                            onClick={() => setConfirmTarget(p)}
+                            className="mr-2 rounded bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700"
+                          >
+                            {t.confirmPayment}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setRejectTarget(p)}
+                          className="rounded border border-red-300 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                        >
+                          {t.rejectPayment}
+                        </button>
+                      </>
+                    )}
+                    {p.status === 'payment_confirmed' && (
                       <button
                         type="button"
-                        onClick={() => setConfirmTarget(p)}
-                        className="mr-2 rounded bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700"
+                        onClick={() => setRefundTarget(p)}
+                        className="rounded border border-red-300 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
                       >
-                        {t.confirmPayment}
+                        {t.refundVoid}
                       </button>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => setRejectTarget(p)}
-                      className="rounded border border-red-300 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
-                    >
-                      {t.rejectPayment}
-                    </button>
                   </td>
                 </tr>
               ))}
@@ -395,6 +541,15 @@ export function PurchaseManager({ messages, locale }: PurchaseManagerProps) {
           t={t}
           onReject={handleReject}
           onCancel={() => setRejectTarget(null)}
+          isPending={isPending}
+        />
+      )}
+      {refundTarget && (
+        <RefundDialog
+          purchase={refundTarget}
+          t={t}
+          onRefund={handleRefund}
+          onCancel={() => setRefundTarget(null)}
           isPending={isPending}
         />
       )}
