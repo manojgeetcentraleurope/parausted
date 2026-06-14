@@ -124,9 +124,9 @@ export function RedemptionManager({ messages, locale }: RedemptionManagerProps) 
             className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 font-mono text-sm uppercase text-slate-900 outline-none transition placeholder:normal-case placeholder:text-slate-400 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-200 disabled:opacity-50"
             disabled={isPending}
             id="voucher-code"
-            maxLength={19}
+            maxLength={32}
             onChange={(e) => {
-              setCode(e.target.value);
+              setCode(e.target.value.toUpperCase());
               setErrorKey(null);
               setSuccess(null);
             }}

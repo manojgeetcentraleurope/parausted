@@ -113,9 +113,9 @@ export default async function VoucherPage({ params }: VoucherPageProps) {
   const messages = getMessages(locale);
   const t = messages.voucher;
 
-  // Sanitise code: must match the generated PU-XXXX-XXXX-XXXX format (hex, 17 chars).
+  // Sanitise code: accept PU and custom branded prefixes with three hex suffix groups.
   // Rejects arbitrary strings before hitting the DB (defence in depth).
-  const safeCode = /^PU-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/i.test(code)
+  const safeCode = /^[A-Z0-9]+(-[A-Z0-9]+)*-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/i.test(code)
     ? code.toUpperCase()
     : null;
   if (!safeCode) {
