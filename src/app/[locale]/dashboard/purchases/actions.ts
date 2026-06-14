@@ -13,6 +13,7 @@ export interface PendingPurchaseRow {
   amount_cents: number;
   currency: string;
   payment_method: string;
+  payment_source: string;
   buyer_email_masked: string;
   recipient_name: string;
   created_at: string;
@@ -141,6 +142,7 @@ export async function listPendingPurchases(
       amount_cents,
       currency,
       payment_method,
+      payment_source,
       buyer_email,
       recipient_name,
       created_at,
@@ -150,8 +152,10 @@ export async function listPendingPurchases(
     `
     )
     .eq('merchant_id', merchantId)
-    .in('status', ['pending', 'payment_confirmed'])
-    .eq('payment_source', 'OFFLINE')
+    .or(
+      'and(payment_source.eq.OFFLINE,status.in.(pending,payment_confirmed)),' +
+        'and(payment_source.eq.ONLINE,status.in.(payment_confirmed,refund_pending,refund_failed,refunded))'
+    )
     .order('created_at', { ascending: false });
 
   if (search && search.trim().length > 0) {
@@ -176,6 +180,7 @@ export async function listPendingPurchases(
       amount_cents: r.amount_cents as number,
       currency: (r.currency as string | undefined) ?? 'EUR',
       payment_method: r.payment_method as string,
+      payment_source: r.payment_source as string,
       buyer_email_masked: maskEmail((r.buyer_email as string | undefined) ?? ''),
       recipient_name: (r.recipient_name as string | undefined) ?? '',
       created_at: r.created_at as string,

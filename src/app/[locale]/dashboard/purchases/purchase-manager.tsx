@@ -6,6 +6,7 @@ import {
   confirmPurchase,
   rejectPurchase,
   refundPurchase,
+  refundOnlinePurchase,
   type PendingPurchaseRow,
 } from './actions';
 import type { MessagesShape } from '@/lib/i18n/messages/es';
@@ -23,11 +24,13 @@ function PaymentMethodBadge({
     bizum_direct: t.bizumDirect,
     bank_transfer: t.bankTransfer,
     cash: t.cash,
+    card: t.card,
   };
   const colors: Record<string, string> = {
     bizum_direct: 'bg-purple-100 text-purple-800',
     bank_transfer: 'bg-blue-100 text-blue-800',
     cash: 'bg-green-100 text-green-800',
+    card: 'bg-sky-100 text-sky-800',
   };
   return (
     <span
@@ -70,10 +73,16 @@ function StatusBadge({
   const labels: Record<string, string> = {
     pending: t.statusPending,
     payment_confirmed: t.statusPaymentConfirmed,
+    refund_pending: t.statusRefundPending,
+    refund_failed: t.statusRefundFailed,
+    refunded: t.statusRefunded,
   };
   const colors: Record<string, string> = {
     pending: 'bg-amber-100 text-amber-800',
     payment_confirmed: 'bg-green-100 text-green-800',
+    refund_pending: 'bg-amber-100 text-amber-800',
+    refund_failed: 'bg-red-100 text-red-800',
+    refunded: 'bg-gray-100 text-gray-600',
   };
   return (
     <span
@@ -199,20 +208,25 @@ function RefundDialog({
   onRefund,
   onCancel,
   isPending,
+  mode,
 }: {
   purchase: PendingPurchaseRow;
   t: MessagesShape['purchases'];
   onRefund: (reason: string) => void;
   onCancel: () => void;
   isPending: boolean;
+  mode: 'offline' | 'online';
 }) {
   const [reason, setReason] = useState('');
   const trimmed = reason.trim();
+  const title = mode === 'online' ? t.onlineRefundTitle : t.refundTitle;
+  const message = mode === 'online' ? t.onlineRefundMessage : t.refundMessage;
+  const buttonLabel = mode === 'online' ? t.onlineRefund : t.refund;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-        <h3 className="text-lg font-semibold text-red-700">{t.refundTitle}</h3>
-        <p className="mt-2 text-sm text-gray-600">{t.refundMessage}</p>
+        <h3 className="text-lg font-semibold text-red-700">{title}</h3>
+        <p className="mt-2 text-sm text-gray-600">{message}</p>
         <p className="mt-3 text-sm">
           <strong>{t.referenceCode}:</strong> {purchase.reference_code}
         </p>
@@ -245,7 +259,7 @@ function RefundDialog({
             disabled={isPending || trimmed.length === 0}
             className="rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
           >
-            {isPending ? '...' : t.refund}
+            {isPending ? '...' : buttonLabel}
           </button>
         </div>
       </div>
@@ -266,7 +280,7 @@ export function PurchaseManager({ messages, locale }: PurchaseManagerProps) {
   const [search, setSearch] = useState('');
   const [isPending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<{
-    type: 'success' | 'error';
+    type: 'success' | 'error' | 'info';
     text: string;
     voucherCode?: string;
   } | null>(null);
@@ -275,6 +289,7 @@ export function PurchaseManager({ messages, locale }: PurchaseManagerProps) {
   const [confirmTarget, setConfirmTarget] = useState<PendingPurchaseRow | null>(null);
   const [rejectTarget, setRejectTarget] = useState<PendingPurchaseRow | null>(null);
   const [refundTarget, setRefundTarget] = useState<PendingPurchaseRow | null>(null);
+  const [onlineRefundTarget, setOnlineRefundTarget] = useState<PendingPurchaseRow | null>(null);
 
   // ── Fetch ──────────────────────────────────────────────────────
   const refresh = useCallback(() => {
@@ -383,6 +398,48 @@ export function PurchaseManager({ messages, locale }: PurchaseManagerProps) {
     });
   }
 
+  function handleOnlineRefund(reason: string) {
+    if (!onlineRefundTarget) return;
+    const id = onlineRefundTarget.id;
+    setOnlineRefundTarget(null);
+    startTransition(async () => {
+      const result = await refundOnlinePurchase(id, reason);
+      if (result.success) {
+        setFeedback({ type: 'success', text: t.successOnlineRefunded });
+      } else {
+        const errKey = result.error;
+        if (errKey === 'refund_pending') {
+          setFeedback({ type: 'info', text: t.infoRefundPending });
+        } else {
+          const msg =
+            errKey === 'invalid_reason'
+              ? t.errorInvalidReason
+              : errKey === 'invalid_payment_source'
+                ? t.errorInvalidPaymentSource
+                : errKey === 'missing_payment_intent'
+                  ? t.errorMissingPaymentIntent
+                  : errKey === 'not_refundable'
+                    ? t.errorNotRefundable
+                    : errKey === 'has_redemptions'
+                      ? t.errorHasRedemptions
+                      : errKey === 'state_invalid'
+                        ? t.errorStateInvalid
+                        : errKey === 'already_processed'
+                          ? t.errorAlreadyProcessed
+                          : errKey === 'not_found'
+                            ? t.errorNotFound
+                            : errKey === 'unauthorized'
+                              ? t.errorUnauthorized
+                              : errKey === 'refund_failed'
+                                ? t.errorRefundFailed
+                                : t.errorUnknown;
+          setFeedback({ type: 'error', text: msg });
+        }
+      }
+      refresh();
+    });
+  }
+
   // ── Auto-clear feedback ────────────────────────────────────────
   useEffect(() => {
     if (!feedback) return;
@@ -401,7 +458,9 @@ export function PurchaseManager({ messages, locale }: PurchaseManagerProps) {
           className={`mt-3 rounded p-3 text-sm ${
             feedback.type === 'success'
               ? 'bg-green-50 text-green-800'
-              : 'bg-red-50 text-red-800'
+              : feedback.type === 'info'
+                ? 'bg-amber-50 text-amber-800'
+                : 'bg-red-50 text-red-800'
           }`}
         >
           <span>{feedback.text}</span>
@@ -505,13 +564,31 @@ export function PurchaseManager({ messages, locale }: PurchaseManagerProps) {
                         </button>
                       </>
                     )}
-                    {p.status === 'payment_confirmed' && (
+                    {p.status === 'payment_confirmed' && p.payment_source === 'OFFLINE' && (
                       <button
                         type="button"
                         onClick={() => setRefundTarget(p)}
                         className="rounded border border-red-300 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
                       >
                         {t.refundVoid}
+                      </button>
+                    )}
+                    {p.status === 'payment_confirmed' && p.payment_source === 'ONLINE' && (
+                      <button
+                        type="button"
+                        onClick={() => setOnlineRefundTarget(p)}
+                        className="rounded border border-red-300 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                      >
+                        {t.onlineRefund}
+                      </button>
+                    )}
+                    {p.status === 'refund_failed' && p.payment_source === 'ONLINE' && (
+                      <button
+                        type="button"
+                        onClick={() => setOnlineRefundTarget(p)}
+                        className="rounded border border-red-300 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                      >
+                        {t.retryRefund}
                       </button>
                     )}
                   </td>
@@ -551,6 +628,17 @@ export function PurchaseManager({ messages, locale }: PurchaseManagerProps) {
           onRefund={handleRefund}
           onCancel={() => setRefundTarget(null)}
           isPending={isPending}
+          mode="offline"
+        />
+      )}
+      {onlineRefundTarget && (
+        <RefundDialog
+          purchase={onlineRefundTarget}
+          t={t}
+          onRefund={handleOnlineRefund}
+          onCancel={() => setOnlineRefundTarget(null)}
+          isPending={isPending}
+          mode="online"
         />
       )}
     </section>
