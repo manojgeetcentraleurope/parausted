@@ -11,6 +11,21 @@ import {
 } from './actions';
 import type { MessagesShape } from '@/lib/i18n/messages/es';
 
+// ─── Eligibility helpers ────────────────────────────────────────
+
+/**
+ * Best-effort UI guard. RPC remains the authoritative source of truth.
+ * Fails closed: returns false when any field is missing.
+ */
+function isOnlineRefundEligible(p: PendingPurchaseRow): boolean {
+  if (p.payment_source !== 'ONLINE') return false;
+  if (p.status !== 'payment_confirmed') return false;
+  if (p.voucher_status == null) return false;
+  if (!['issued', 'delivered'].includes(p.voucher_status)) return false;
+  if (p.voucher_balance_cents == null || p.voucher_original_amount_cents == null) return false;
+  return p.voucher_balance_cents === p.voucher_original_amount_cents;
+}
+
 // ─── Sub-components ──────────────────────────────────────────────
 
 function PaymentMethodBadge({
@@ -573,7 +588,7 @@ export function PurchaseManager({ messages, locale }: PurchaseManagerProps) {
                         {t.refundVoid}
                       </button>
                     )}
-                    {p.status === 'payment_confirmed' && p.payment_source === 'ONLINE' && (
+                    {p.status === 'payment_confirmed' && p.payment_source === 'ONLINE' && isOnlineRefundEligible(p) && (
                       <button
                         type="button"
                         onClick={() => setOnlineRefundTarget(p)}

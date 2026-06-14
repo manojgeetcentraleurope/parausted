@@ -20,6 +20,10 @@ export interface PendingPurchaseRow {
   expires_at: string;
   is_expired: boolean;
   status: string;
+  // Voucher eligibility signals (null when voucher not yet issued or not fetched)
+  voucher_status: string | null;
+  voucher_balance_cents: number | null;
+  voucher_original_amount_cents: number | null;
 }
 
 export interface ListPendingPurchasesResult {
@@ -148,7 +152,8 @@ export async function listPendingPurchases(
       created_at,
       expires_at,
       status,
-      gift_cards ( title, title_en )
+      gift_cards ( title, title_en ),
+      vouchers ( status, balance_cents, original_amount_cents )
     `
     )
     .eq('merchant_id', merchantId)
@@ -187,6 +192,9 @@ export async function listPendingPurchases(
       expires_at: r.expires_at as string,
       is_expired: new Date(r.expires_at as string) < now,
       status: r.status as string,
+      voucher_status: (r.vouchers?.status as string | undefined) ?? null,
+      voucher_balance_cents: (r.vouchers?.balance_cents as number | undefined) ?? null,
+      voucher_original_amount_cents: (r.vouchers?.original_amount_cents as number | undefined) ?? null,
     };
   });
 
