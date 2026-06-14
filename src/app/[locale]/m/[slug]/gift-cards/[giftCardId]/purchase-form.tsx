@@ -107,6 +107,7 @@ type Copy = {
   checkoutReadyTitle: string;
   checkoutReadyMessage: string;
   checkoutReadyLinkLabel: string;
+  checkoutReadyWhatsAppLabel: string;
   legalDisclosure: string;
   legalLinkLabel: string;
 };
@@ -192,6 +193,7 @@ const COPY: Record<Locale, Copy> = {
     checkoutReadyMessage:
       'Tu pago con tarjeta se ha confirmado y tu tarjeta regalo se ha emitido.',
     checkoutReadyLinkLabel: 'Ver tarjeta regalo',
+    checkoutReadyWhatsAppLabel: 'Compartir por WhatsApp',
     legalDisclosure: 'Esta tarjeta se emitirá solo tras confirmar el pago. Para tarjetas de servicio, la cita y disponibilidad se acuerdan directamente con el comercio. Consulta nuestra',
     legalLinkLabel: 'política de validez y reembolso',
   },
@@ -275,6 +277,7 @@ const COPY: Record<Locale, Copy> = {
     checkoutReadyMessage:
       'Your card payment was confirmed and your gift card has been issued.',
     checkoutReadyLinkLabel: 'View gift card',
+    checkoutReadyWhatsAppLabel: 'Share via WhatsApp',
     legalDisclosure: 'Your gift card is issued only after payment is confirmed. For service gift cards, scheduling and availability are arranged directly with the merchant. Read our',
     legalLinkLabel: 'validity and refund policy',
   },
@@ -391,6 +394,15 @@ function SuccessPanel({
 // Main form component
 // ---------------------------------------------------------------------------
 
+function getShareVoucherUrl(locale: Locale, voucherCode: string): string {
+  const configuredBaseUrl =
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || undefined;
+  const fallbackBaseUrl =
+    typeof window === 'undefined' ? 'http://localhost:3000' : window.location.origin;
+
+  return `${configuredBaseUrl ?? fallbackBaseUrl}/${locale}/v/${voucherCode}`;
+}
+
 export function PurchaseForm({
   locale,
   merchant,
@@ -481,12 +493,27 @@ export function PurchaseForm({
         >
           <p className="text-sm font-semibold text-emerald-800">{copy.checkoutReadyTitle}</p>
           <p className="mt-1 text-sm text-emerald-700">{copy.checkoutReadyMessage}</p>
-          <Link
-            href={`/${locale}/v/${checkoutReturnStatus.voucherCode}`}
-            className="mt-3 inline-block text-sm font-medium text-emerald-800 underline hover:text-emerald-900"
-          >
-            {copy.checkoutReadyLinkLabel} →
-          </Link>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <Link
+              href={`/${locale}/v/${checkoutReturnStatus.voucherCode}`}
+              className="text-sm font-medium text-emerald-800 underline hover:text-emerald-900"
+            >
+              {copy.checkoutReadyLinkLabel} →
+            </Link>
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(
+                [
+                  merchant.name,
+                  getShareVoucherUrl(locale, checkoutReturnStatus.voucherCode),
+                ].join(' · '),
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-full bg-green-500 px-4 py-1.5 text-sm font-semibold text-white hover:bg-green-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
+            >
+              {copy.checkoutReadyWhatsAppLabel}
+            </a>
+          </div>
         </div>
       )}
       {checkoutReturnStatus.kind === 'success_preparing' && (

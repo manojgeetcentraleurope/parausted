@@ -99,6 +99,7 @@ export const esMessages = {
     deliveryDelivered: 'Entregada',
     deliveryFailed: 'Fallida',
     deliveryDownloaded: 'Descargada',
+    shareViaWhatsApp: 'Compartir por WhatsApp',
   },
   redemptions: {
     title: 'Canjear vale',

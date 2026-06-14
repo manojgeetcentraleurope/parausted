@@ -162,6 +162,12 @@ export default async function VoucherPage({ params }: VoucherPageProps) {
     { year: 'numeric', month: 'long', day: 'numeric' }
   );
 
+  const canonicalVoucherUrl = getCanonicalUrl(`/v/${safeCode}`, locale);
+  const whatsAppMessage = [purchase.merchants?.name, canonicalVoucherUrl]
+    .filter(Boolean)
+    .join(' · ');
+  const whatsAppUrl = `https://wa.me/?text=${encodeURIComponent(whatsAppMessage)}`;
+
   return (
     <main className="min-h-screen bg-gray-50 px-4 py-10">
       <div className="mx-auto max-w-md rounded-lg bg-white p-8 shadow-md">
@@ -250,6 +256,18 @@ export default async function VoucherPage({ params }: VoucherPageProps) {
           <p className="mt-1 font-mono text-xl font-bold tracking-widest text-gray-900 break-all">
             {voucher.code}
           </p>
+        </div>
+
+        {/* WhatsApp share */}
+        <div className="mt-4 text-center">
+          <a
+            href={whatsAppUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-full bg-green-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-green-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
+          >
+            {t.shareViaWhatsApp}
+          </a>
         </div>
       </div>
     </main>

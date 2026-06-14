@@ -97,6 +97,7 @@ export const enMessages = {
     deliveryDelivered: 'Delivered',
     deliveryFailed: 'Failed',
     deliveryDownloaded: 'Downloaded',
+    shareViaWhatsApp: 'Share via WhatsApp',
   },
   redemptions: {
     title: 'Redeem voucher',
