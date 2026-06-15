@@ -17,6 +17,13 @@ interface RpcResult {
   already_processed?: boolean;
 }
 
+// Minimal shape of the refund reconciliation RPC result. All outcomes are
+// definitive handled results; the route only needs success/outcome for logging.
+interface RefundRpcResult {
+  success: boolean;
+  outcome?: string;
+}
+
 // Permanent RPC errors that Stripe retrying will not fix — return 200 to acknowledge.
 const PERMANENT_ERRORS = new Set([
   'not_found',
@@ -26,6 +33,80 @@ const PERMANENT_ERRORS = new Set([
   'unsupported_event_type',
   'already_processed',
 ]);
+
+// Refund lifecycle events wired to the reconciliation RPC. charge.refunded is
+// deliberately NOT included yet — deferred until Stripe test-mode discovery
+// confirms it is needed.
+const REFUND_EVENT_TYPES = new Set(['refund.created', 'refund.updated', 'refund.failed']);
+
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isRefundEvent(type: string): boolean {
+  return REFUND_EVENT_TYPES.has(type);
+}
+
+// Resolve a Stripe id from a field that may be a plain id string or an expanded object.
+function getStripeId(value: unknown): string | null {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (
+    value !== null &&
+    typeof value === 'object' &&
+    'id' in value &&
+    typeof (value as { id: unknown }).id === 'string'
+  ) {
+    return (value as { id: string }).id;
+  }
+  return null;
+}
+
+// Only pass through a purchase_id that is present and shaped like a UUID.
+function parsePurchaseIdFromRefundMetadata(refund: Stripe.Refund): string | null {
+  const candidate = refund.metadata?.purchase_id;
+  if (typeof candidate === 'string' && UUID_REGEX.test(candidate)) {
+    return candidate;
+  }
+  return null;
+}
+
+async function handleRefundEvent(event: Stripe.Event): Promise<NextResponse> {
+  const refund = event.data.object as Stripe.Refund;
+
+  const { data, error } = await supabaseAdminClient.rpc('reconcile_stripe_refund_webhook', {
+    p_event_id: event.id,
+    p_event_type: event.type,
+    p_refund_id: refund.id,
+    p_refund_status: refund.status ?? '',
+    p_refund_amount_cents: refund.amount,
+    p_currency: refund.currency ?? null,
+    p_payment_intent_id: getStripeId(refund.payment_intent),
+    p_charge_id: getStripeId(refund.charge),
+    p_purchase_id: parsePurchaseIdFromRefundMetadata(refund),
+  });
+
+  if (error) {
+    // Transient DB/RPC error — return 500 so Stripe retries.
+    console.error('[stripe-webhook] Refund RPC error', {
+      eventId: event.id,
+      eventType: event.type,
+      message: error.message,
+    });
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  }
+
+  // Any RPC data response is a definitive handled outcome (including
+  // invalid_input / unsupported_event_type, which retrying will not fix) — ack with 200.
+  const result = data as RefundRpcResult;
+  console.log('[stripe-webhook] Refund reconciled', {
+    eventId: event.id,
+    eventType: event.type,
+    outcome: result.outcome,
+  });
+
+  return NextResponse.json({ received: true });
+}
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -57,6 +138,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   console.log('[stripe-webhook] Received', { id: event.id, type: event.type });
+
+  // Route refund lifecycle events to the reconciliation RPC.
+  if (isRefundEvent(event.type)) {
+    return handleRefundEvent(event);
+  }
 
   // Ignore all event types except checkout.session.completed.
   if (event.type !== 'checkout.session.completed') {
