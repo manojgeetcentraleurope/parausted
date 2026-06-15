@@ -98,3 +98,60 @@ export type AdminAlertMailerResult =
       retryAfterSeconds?: number;
       providerResponse?: Record<string, unknown>;
     };
+
+/**
+ * Worker modes for the platform alert orchestrator.
+ * Kept separate from the delivery worker mode to avoid coupling.
+ */
+export const PLATFORM_ALERT_WORKER_MODES = ['dry_run', 'resend'] as const;
+
+export type PlatformAlertWorkerMode = (typeof PLATFORM_ALERT_WORKER_MODES)[number];
+
+export function isPlatformAlertWorkerMode(
+  value: string,
+): value is PlatformAlertWorkerMode {
+  return PLATFORM_ALERT_WORKER_MODES.includes(value as PlatformAlertWorkerMode);
+}
+
+/**
+ * Row shape returned by the claim_queued_platform_alerts RPC.
+ * payload is JSONB and must be narrowed defensively.
+ */
+export interface ClaimedPlatformAlert {
+  platform_alert_id: string;
+  alert_type: string;
+  severity: string;
+  source_type: string;
+  source_id: string;
+  reference_code: string | null;
+  payload: unknown;
+  attempt_count: number;
+  max_attempts: number;
+  idempotency_key: string;
+  locked_at: string;
+  locked_by: string;
+}
+
+/**
+ * Per-alert outcome from the platform alert worker.
+ */
+export interface ProcessPlatformAlertResult {
+  platformAlertId: string;
+  ok: boolean;
+  status: 'sent' | 'failed' | 'retry_scheduled';
+  providerMessageId?: string;
+  error?: string;
+}
+
+/**
+ * Summary returned by processPlatformAlerts.
+ */
+export interface PlatformAlertWorkerSummary {
+  enqueued: number;
+  claimed: number;
+  processed: number;
+  sent: number;
+  failed: number;
+  retryScheduled: number;
+  results: ProcessPlatformAlertResult[];
+}
