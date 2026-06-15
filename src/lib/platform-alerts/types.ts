@@ -54,3 +54,47 @@ export interface EnqueuePlatformAlertsResult {
 export interface EnqueuePlatformAlertsOptions {
   limit?: number;
 }
+
+/**
+ * Input consumed by the admin alert email template and mailer.
+ * Contains only safe, whitelisted operational fields. NEVER buyer/recipient
+ * PII, voucher codes, raw evidence, or raw Stripe payloads.
+ */
+export interface PlatformAlertEmailInput {
+  alertId: string;
+  alertType: string;
+  severity: AlertSeverity;
+  referenceCode: string | null;
+  payload: PlatformAlertPayload;
+  createdAt: string;
+  /** Absolute runbook URL, when configured via env. */
+  runbookUrl?: string | null;
+  /** Repository-relative runbook path fallback. */
+  runbookPath?: string | null;
+}
+
+/**
+ * Rendered admin alert email content.
+ */
+export interface RenderedPlatformAlertEmail {
+  subject: string;
+  html: string;
+  text: string;
+}
+
+/**
+ * Result returned by AdminAlertMailer.send.
+ */
+export type AdminAlertMailerResult =
+  | {
+      success: true;
+      providerMessageId?: string;
+      providerResponse?: Record<string, unknown>;
+    }
+  | {
+      success: false;
+      failureReason: string;
+      retryable: boolean;
+      retryAfterSeconds?: number;
+      providerResponse?: Record<string, unknown>;
+    };
