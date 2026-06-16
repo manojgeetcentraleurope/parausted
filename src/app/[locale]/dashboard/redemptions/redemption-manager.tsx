@@ -56,6 +56,7 @@ export function RedemptionManager({ messages, locale }: RedemptionManagerProps) 
     exchanged: t.errorExchanged,
     not_redeemable: t.errorNotRedeemable,
     already_processed: t.errorAlreadyProcessed,
+    rate_limited: t.errorTooManyRequests,
     unknown: t.errorUnknown,
   };
 

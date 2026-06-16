@@ -1,5 +1,7 @@
 'use server';
 
+import { headers } from 'next/headers';
+
 import { isSupportedLocale } from '@/lib/i18n/config';
 import type { Locale } from '@/lib/i18n/config';
 import { eurosToCents, centsToEuros } from '@/lib/gift-cards/money';
@@ -11,6 +13,9 @@ import {
 } from '@/lib/purchases/schema';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { getStripeClient } from '@/lib/stripe/server';
+import { getClientIpFromHeaders } from '@/lib/security/client-ip';
+import { buildRateLimitKey, checkRateLimit } from '@/lib/security/rate-limit';
+import { recordSecurityEvent } from '@/lib/security/security-events';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -76,6 +81,7 @@ const MESSAGES = {
     createFailed: 'No se pudo crear la solicitud. Inténtalo de nuevo.',
     cardNotAvailable: 'El pago con tarjeta no está disponible para este comercio.',
     checkoutFailed: 'No se pudo iniciar el pago. Inténtalo de nuevo.',
+    tooManyRequests: 'Demasiadas solicitudes. Inténtalo de nuevo más tarde.',
   },
   en: {
     validationFailed: 'Please review the form fields.',
@@ -88,6 +94,7 @@ const MESSAGES = {
     createFailed: 'Could not create the request. Please try again.',
     cardNotAvailable: 'Card payment is not available for this merchant.',
     checkoutFailed: 'Could not start card payment. Please try again.',
+    tooManyRequests: 'Too many requests. Please try again later.',
   },
 } as const;
 
@@ -197,6 +204,30 @@ export async function createPurchaseAction(
 ): Promise<PurchaseActionState> {
   const locale = isSupportedLocale(context.locale) ? context.locale : 'es';
   const msg = MESSAGES[locale];
+
+  // 0. Rate limit abuse-sensitive purchase creation per client IP (5/min).
+  // Throttle before any DB work so spam never reaches the database.
+  const clientIp = getClientIpFromHeaders(await headers());
+  const rateLimitDecision = await checkRateLimit(
+    buildRateLimitKey('purchase_create', clientIp),
+    5,
+    60,
+  );
+  if (rateLimitDecision.enforced && !rateLimitDecision.allowed) {
+    await recordSecurityEvent({
+      eventType: 'rate_limit_purchase_create',
+      endpoint: 'createPurchaseAction',
+      severity: 'warning',
+      ipAddress: clientIp,
+      autoAction: 'blocked',
+      details: {
+        scope: 'purchase_create',
+        count: rateLimitDecision.count,
+        limit: rateLimitDecision.limit,
+      },
+    });
+    return { ok: false, message: msg.tooManyRequests };
+  }
 
   // 1. Validate form input
   const rawFields = extractPurchaseFormData(formData);

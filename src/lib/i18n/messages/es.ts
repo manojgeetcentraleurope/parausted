@@ -128,6 +128,7 @@ export const esMessages = {
     deliveryFailed: 'Fallida',
     deliveryDownloaded: 'Descargada',
     shareViaWhatsApp: 'Compartir por WhatsApp',
+    tooManyRequests: 'Demasiadas solicitudes. Inténtalo de nuevo más tarde.',
   },
   redemptions: {
     title: 'Canjear vale',
@@ -150,6 +151,7 @@ export const esMessages = {
     errorExchanged: 'Este vale ha sido intercambiado y no se puede canjear.',
     errorNotRedeemable: 'Este vale no se puede canjear.',
     errorAlreadyProcessed: 'Este vale ya fue procesado.',
+    errorTooManyRequests: 'Demasiadas solicitudes. Inténtalo de nuevo más tarde.',
     errorUnknown: 'Error inesperado. Inténtalo de nuevo.',
   },
   voucherHistory: {

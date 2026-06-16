@@ -126,6 +126,7 @@ export const enMessages = {
     deliveryFailed: 'Failed',
     deliveryDownloaded: 'Downloaded',
     shareViaWhatsApp: 'Share via WhatsApp',
+    tooManyRequests: 'Too many requests. Please try again later.',
   },
   redemptions: {
     title: 'Redeem voucher',
@@ -148,6 +149,7 @@ export const enMessages = {
     errorExchanged: 'This voucher has been exchanged and cannot be redeemed.',
     errorNotRedeemable: 'This voucher cannot be redeemed.',
     errorAlreadyProcessed: 'This voucher was already processed.',
+    errorTooManyRequests: 'Too many requests. Please try again later.',
     errorUnknown: 'Unexpected error. Please try again.',
   },
   voucherHistory: {

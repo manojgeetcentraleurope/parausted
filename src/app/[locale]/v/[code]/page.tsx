@@ -1,10 +1,15 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 
 import { isSupportedLocale } from '@/lib/i18n/config';
 import { getMessages } from '@/lib/i18n/messages';
 import { getCanonicalUrl, getAlternateLanguageUrls } from '@/lib/seo/metadata';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { getClientIpFromHeaders } from '@/lib/security/client-ip';
+import { buildRateLimitKey, checkRateLimit } from '@/lib/security/rate-limit';
+import { fingerprintSensitiveToken } from '@/lib/security/hash';
+import { recordSecurityEvent } from '@/lib/security/security-events';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -120,6 +125,35 @@ export default async function VoucherPage({ params }: VoucherPageProps) {
     : null;
   if (!safeCode) {
     notFound();
+  }
+
+  // Rate limit public voucher lookups per client IP (20/min). Throttle before
+  // hitting the database; only a hashed fingerprint of the code is ever logged.
+  const clientIp = getClientIpFromHeaders(await headers());
+  const rateLimitDecision = await checkRateLimit(
+    buildRateLimitKey('voucher_lookup', clientIp),
+    20,
+    60,
+  );
+  if (rateLimitDecision.enforced && !rateLimitDecision.allowed) {
+    await recordSecurityEvent({
+      eventType: 'rate_limit_voucher_lookup',
+      endpoint: 'VoucherPage',
+      severity: 'warning',
+      ipAddress: clientIp,
+      autoAction: 'blocked',
+      details: {
+        scope: 'voucher_lookup',
+        code_fingerprint: fingerprintSensitiveToken(safeCode),
+        count: rateLimitDecision.count,
+        limit: rateLimitDecision.limit,
+      },
+    });
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10">
+        <p className="max-w-md text-center text-base text-gray-600">{t.tooManyRequests}</p>
+      </main>
+    );
   }
 
   const supabase = await createSupabaseServerClient();
