@@ -10,6 +10,7 @@ import { getClientIpFromHeaders } from '@/lib/security/client-ip';
 import { buildRateLimitKey, checkRateLimit } from '@/lib/security/rate-limit';
 import { fingerprintSensitiveToken } from '@/lib/security/hash';
 import { recordSecurityEvent } from '@/lib/security/security-events';
+import { VoucherShareActions } from './voucher-share-actions';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -292,17 +293,17 @@ export default async function VoucherPage({ params }: VoucherPageProps) {
           </p>
         </div>
 
-        {/* WhatsApp share */}
-        <div className="mt-4 text-center">
-          <a
-            href={whatsAppUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-full bg-green-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-green-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
-          >
-            {t.shareViaWhatsApp}
-          </a>
-        </div>
+        {/* Share / manual fallback actions */}
+        <VoucherShareActions
+          whatsAppUrl={whatsAppUrl}
+          voucherUrl={canonicalVoucherUrl}
+          labels={{
+            shareViaWhatsApp: t.shareViaWhatsApp,
+            copyLink: t.copyLink,
+            linkCopied: t.linkCopied,
+            printPdf: t.printPdf,
+          }}
+        />
       </div>
     </main>
   );

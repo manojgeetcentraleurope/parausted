@@ -126,6 +126,9 @@ export const enMessages = {
     deliveryFailed: 'Failed',
     deliveryDownloaded: 'Downloaded',
     shareViaWhatsApp: 'Share via WhatsApp',
+    copyLink: 'Copy link',
+    linkCopied: 'Link copied',
+    printPdf: 'Print / save as PDF',
     tooManyRequests: 'Too many requests. Please try again later.',
   },
   redemptions: {

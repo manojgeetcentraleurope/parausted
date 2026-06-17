@@ -128,6 +128,9 @@ export const esMessages = {
     deliveryFailed: 'Fallida',
     deliveryDownloaded: 'Descargada',
     shareViaWhatsApp: 'Compartir por WhatsApp',
+    copyLink: 'Copiar enlace',
+    linkCopied: 'Enlace copiado',
+    printPdf: 'Imprimir / guardar como PDF',
     tooManyRequests: 'Demasiadas solicitudes. Inténtalo de nuevo más tarde.',
   },
   redemptions: {
