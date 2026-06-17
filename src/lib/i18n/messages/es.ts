@@ -99,7 +99,8 @@ export const esMessages = {
     viewVoucher: 'Ver vale',
   },
   voucher: {
-    title: 'Tu tarjeta regalo',
+    title: 'Tarjeta regalo',
+    titleFrom: 'Tarjeta regalo de',
     code: 'Código',
     balance: 'Saldo disponible',
     originalAmount: 'Valor original',

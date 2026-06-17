@@ -33,7 +33,7 @@ export function VoucherShareActions({
   }
 
   return (
-    <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-center">
+    <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-center print:hidden">
       <a
         href={whatsAppUrl}
         target="_blank"

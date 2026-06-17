@@ -213,7 +213,11 @@ export default async function VoucherPage({ params }: VoucherPageProps) {
           </p>
         )}
 
-        <h1 className="text-2xl font-bold text-gray-900">{t.title}</h1>
+        <h1 className="text-2xl font-bold text-gray-900">
+          {purchase?.merchants?.name
+            ? `${t.titleFrom} ${purchase.merchants.name}`
+            : t.title}
+        </h1>
 
         {/* Recipient */}
         {purchase?.recipient_name && (

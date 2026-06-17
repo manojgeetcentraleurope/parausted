@@ -97,7 +97,8 @@ export const enMessages = {
     viewVoucher: 'View voucher',
   },
   voucher: {
-    title: 'Your gift card',
+    title: 'Gift card',
+    titleFrom: 'Gift card from',
     code: 'Code',
     balance: 'Available balance',
     originalAmount: 'Original value',
