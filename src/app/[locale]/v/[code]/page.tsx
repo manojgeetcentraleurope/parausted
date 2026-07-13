@@ -264,8 +264,8 @@ export default async function VoucherPage({ params }: VoucherPageProps) {
   const detailsLabel = locale === 'en' ? 'Gift details' : 'Detalles del regalo';
 
   return (
-    <main className="min-h-screen bg-[#151a17] px-4 py-8 text-[#f6f1e7] sm:px-6 sm:py-14">
-      <div className="mx-auto max-w-5xl">
+    <main className="voucher-print-page min-h-screen bg-[#151a17] px-4 py-8 text-[#f6f1e7] sm:px-6 sm:py-14">
+      <div className="voucher-print-container mx-auto max-w-5xl">
         <header className="mb-7 flex items-center justify-between gap-4">
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/55">ParaUsted</p>
           <span className={`border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] ${isRedeemed || isExpired || isVoided || isExchanged ? 'border-red-300/30 text-red-200' : 'border-emerald-300/30 text-emerald-200'}`}>
@@ -273,9 +273,9 @@ export default async function VoucherPage({ params }: VoucherPageProps) {
           </span>
         </header>
 
-        <section className="grid overflow-hidden shadow-[0_32px_90px_rgba(0,0,0,0.35)] lg:grid-cols-[1.25fr_0.75fr]">
+        <section className="voucher-print-template grid overflow-hidden shadow-[0_32px_90px_rgba(0,0,0,0.35)] lg:grid-cols-[1.25fr_0.75fr]">
           <div
-            className="relative flex min-h-[520px] flex-col overflow-hidden p-7 sm:min-h-[610px] sm:p-12"
+            className="voucher-print-face relative flex min-h-[520px] flex-col overflow-hidden p-7 sm:min-h-[610px] sm:p-12"
             style={{ backgroundColor: design.surface, color: design.ink }}
           >
             <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full border-[44px] opacity-15" style={{ borderColor: design.accent }} />

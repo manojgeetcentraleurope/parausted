@@ -44,3 +44,32 @@ textarea {
 .gift-font-handwritten {
   font-family: var(--font-gift-handwritten), cursive;
 }
+
+@page {
+  size: A4 landscape;
+  margin: 10mm;
+}
+
+@media print {
+  .voucher-print-page {
+    min-height: auto;
+    padding: 0;
+    background: #ffffff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .voucher-print-container {
+    max-width: none;
+  }
+
+  .voucher-print-template {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+    break-inside: avoid;
+    box-shadow: none;
+  }
+
+  .voucher-print-face {
+    min-height: 170mm;
+  }
+}
