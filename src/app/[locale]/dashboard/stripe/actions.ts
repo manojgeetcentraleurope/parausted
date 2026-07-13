@@ -2,6 +2,7 @@
 
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { getStripeClient } from '@/lib/stripe/server';
+import { resolveAppUrl } from '@/lib/utils/app-url';
 import {
   DEFAULT_LOCALE,
   getLocalizedPath,
@@ -17,7 +18,7 @@ export async function createStripeConnectOnboardingLink(
   locale: Locale,
 ): Promise<CreateStripeConnectOnboardingLinkResult> {
   const resolvedLocale = isSupportedLocale(locale) ? locale : DEFAULT_LOCALE;
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+  const baseUrl = resolveAppUrl();
   const dashboardPath = getLocalizedPath('/dashboard', resolvedLocale);
   const refreshUrl = `${baseUrl}${dashboardPath}`;
   const returnUrl = `${baseUrl}${dashboardPath}`;

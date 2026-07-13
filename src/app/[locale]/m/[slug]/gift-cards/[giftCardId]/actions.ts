@@ -16,6 +16,7 @@ import { getStripeClient } from '@/lib/stripe/server';
 import { getClientIpFromHeaders } from '@/lib/security/client-ip';
 import { buildRateLimitKey, checkRateLimit } from '@/lib/security/rate-limit';
 import { recordSecurityEvent } from '@/lib/security/security-events';
+import { resolveAppUrl } from '@/lib/utils/app-url';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -322,6 +323,8 @@ export async function createPurchaseAction(
     recipient_email: validated.recipientEmail,
     relationship: validated.relationship,
     design_template: validated.designTemplate,
+    occasion: validated.occasion,
+    font_style: validated.fontStyle,
     personal_message: validated.personalMessage,
     sender_name: validated.senderName,
     payment_source: validated.paymentMethod === 'card' ? 'ONLINE' : 'OFFLINE',
@@ -371,7 +374,7 @@ export async function createPurchaseAction(
 
     let checkoutUrl: string;
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+      const baseUrl = resolveAppUrl();
       const successUrl = `${baseUrl}/${locale}/m/${context.slug}/gift-cards/${context.giftCardId}?checkout=success&session_id={CHECKOUT_SESSION_ID}`;
       const cancelUrl = `${baseUrl}/${locale}/m/${context.slug}/gift-cards/${context.giftCardId}?checkout=cancelled`;
 

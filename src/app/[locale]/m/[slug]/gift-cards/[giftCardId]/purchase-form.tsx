@@ -5,6 +5,7 @@ import Link from 'next/link';
 
 import type { Locale } from '@/lib/i18n/config';
 import type { GiftCardType } from '@/lib/gift-cards/schema';
+import { resolveAppUrl } from '@/lib/utils/app-url';
 import {
   RELATIONSHIP_VALUES,
   DESIGN_TEMPLATE_VALUES,
@@ -395,12 +396,7 @@ function SuccessPanel({
 // ---------------------------------------------------------------------------
 
 function getShareVoucherUrl(locale: Locale, voucherCode: string): string {
-  const configuredBaseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || undefined;
-  const fallbackBaseUrl =
-    typeof window === 'undefined' ? 'http://localhost:3000' : window.location.origin;
-
-  return `${configuredBaseUrl ?? fallbackBaseUrl}/${locale}/v/${voucherCode}`;
+  return `${resolveAppUrl()}/${locale}/v/${voucherCode}`;
 }
 
 export function PurchaseForm({

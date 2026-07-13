@@ -10,7 +10,8 @@ import { supabaseAdminClient } from '@/lib/supabase/admin';
 export type RateLimitScope =
   | 'purchase_create'
   | 'voucher_lookup'
-  | 'redemption_attempt';
+  | 'redemption_attempt'
+  | 'partner_redemption';
 
 export type RateLimitDecision = {
   /** Whether the caller should be allowed to proceed. */

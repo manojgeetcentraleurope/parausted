@@ -49,16 +49,18 @@ export function LogoutButton({ locale, label, signingOutLabel }: LogoutButtonPro
     <div>
       <button
         aria-busy={isSigningOut}
-        className="inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex min-h-9 w-full items-center justify-center rounded-lg bg-stone-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-stone-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
         disabled={isSigningOut}
         onClick={handleLogout}
         type="button"
       >
         {isSigningOut ? signingOutLabel : label}
       </button>
-      <p className="mt-2 min-h-5 text-sm text-rose-700" aria-live="polite">
-        {feedbackMessage}
-      </p>
+      {feedbackMessage ? (
+        <p className="mt-2 text-sm text-rose-700" aria-live="polite">
+          {feedbackMessage}
+        </p>
+      ) : null}
     </div>
   );
 }

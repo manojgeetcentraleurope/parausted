@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { redeemVoucherFull } from './actions';
 
 import type { Locale } from '@/lib/i18n/config';
 import type { MessagesShape } from '@/lib/i18n/messages/es';
@@ -11,6 +10,14 @@ import type { MessagesShape } from '@/lib/i18n/messages/es';
 const LOCALE_TO_BCP47: Record<Locale, string> = {
   es: 'es-ES',
   en: 'en-GB',
+};
+
+type RedeemApiResponse = {
+  success: boolean;
+  error?: string;
+  voucherCode?: string;
+  amountCents?: number;
+  balanceAfter?: number;
 };
 
 function formatEur(cents: number, locale: Locale): string {
@@ -49,6 +56,7 @@ export function RedemptionManager({ messages, locale }: RedemptionManagerProps) 
   const errorMessages: Record<string, string> = {
     unauthorized: t.errorUnauthorized,
     invalid_code: t.errorInvalidCode,
+    invalid_request: t.errorInvalidCode,
     not_found: t.errorNotFound,
     already_redeemed: t.errorAlreadyRedeemed,
     expired: t.errorExpired,
@@ -73,7 +81,18 @@ export function RedemptionManager({ messages, locale }: RedemptionManagerProps) 
     }
 
     startTransition(async () => {
-      const result = await redeemVoucherFull(normalizedCode, notes.trim() || undefined);
+      let result: RedeemApiResponse;
+      try {
+        const response = await fetch(`/api/vouchers/${encodeURIComponent(normalizedCode)}/redeem`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notes: notes.trim() || undefined }),
+        });
+        result = (await response.json()) as RedeemApiResponse;
+      } catch {
+        setErrorKey('unknown');
+        return;
+      }
 
       if (!result.success) {
         setErrorKey(result.error ?? 'unknown');
@@ -91,7 +110,7 @@ export function RedemptionManager({ messages, locale }: RedemptionManagerProps) 
   }
 
   return (
-    <section className="w-full rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
+    <section className="w-full rounded-lg border border-stone-200 bg-white p-5 sm:p-7">
       <h2 className="text-xl font-semibold tracking-tight text-slate-950">{t.title}</h2>
       <p className="mt-2 text-sm text-slate-500">{t.description}</p>
 
@@ -122,7 +141,7 @@ export function RedemptionManager({ messages, locale }: RedemptionManagerProps) 
           </label>
           <input
             autoComplete="off"
-            className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 font-mono text-sm uppercase text-slate-900 outline-none transition placeholder:normal-case placeholder:text-slate-400 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-200 disabled:opacity-50"
+            className="min-h-11 rounded-lg border border-stone-300 bg-stone-50 px-4 py-2.5 font-mono text-base uppercase text-stone-900 outline-none transition placeholder:normal-case placeholder:text-stone-400 focus:border-teal-600 focus:ring-2 focus:ring-teal-100 disabled:opacity-50"
             disabled={isPending}
             id="voucher-code"
             maxLength={32}
@@ -144,7 +163,7 @@ export function RedemptionManager({ messages, locale }: RedemptionManagerProps) 
             {t.notesLabel}
           </label>
           <textarea
-            className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-200 disabled:opacity-50"
+            className="rounded-lg border border-stone-300 bg-stone-50 px-4 py-2.5 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-teal-600 focus:ring-2 focus:ring-teal-100 disabled:opacity-50"
             disabled={isPending}
             id="redemption-notes"
             maxLength={500}
@@ -162,7 +181,7 @@ export function RedemptionManager({ messages, locale }: RedemptionManagerProps) 
         )}
 
         <button
-          className="inline-flex items-center justify-center rounded-xl bg-cyan-700 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-teal-800 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           disabled={isPending}
           type="submit"
         >

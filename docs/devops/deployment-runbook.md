@@ -4,7 +4,7 @@
 
 | Environment | URL | Supabase Project | Stripe Mode | Auto-Deploy |
 |------------|-----|-----------------|-------------|:-----------:|
-| **Local** | localhost:3000 | Local (supabase start) | Test | N/A |
+| **Local** | localhost:3001 | Local (supabase start) | Test | N/A |
 | **Preview** | *.vercel.app | Staging | Test | ✅ Per PR |
 | **Production** | parausted.es | Production (EU Frankfurt) | **Live** | ✅ On merge to main |
 

@@ -39,7 +39,7 @@ DELIVERY_WORKER_ENABLED=true
 DELIVERY_WORKER_SECRET=<strong-secret>
 DELIVERY_WORKER_MODE=dry_run
 DELIVERY_WORKER_BATCH_SIZE=1
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=http://localhost:3001
 ```
 
 ## Security
@@ -93,9 +93,9 @@ $env:DELIVERY_WORKER_ENABLED = "false"
 $env:DELIVERY_WORKER_SECRET = "local-worker-secret"
 $env:DELIVERY_WORKER_MODE = "dry_run"
 $env:DELIVERY_WORKER_BATCH_SIZE = "1"
-$env:NEXT_PUBLIC_APP_URL = "http://localhost:3000"
+$env:NEXT_PUBLIC_APP_URL = "http://localhost:3001"
 
-Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/jobs/process-deliveries" -Headers @{ Authorization = "Bearer local-worker-secret" }
+Invoke-RestMethod -Method Post -Uri "http://localhost:3001/api/jobs/process-deliveries" -Headers @{ Authorization = "Bearer local-worker-secret" }
 ```
 
 Expected result: HTTP 503 `worker_disabled`.
@@ -106,9 +106,9 @@ $env:DELIVERY_WORKER_ENABLED = "true"
 $env:DELIVERY_WORKER_SECRET = "local-worker-secret"
 $env:DELIVERY_WORKER_MODE = "dry_run"
 $env:DELIVERY_WORKER_BATCH_SIZE = "1"
-$env:NEXT_PUBLIC_APP_URL = "http://localhost:3000"
+$env:NEXT_PUBLIC_APP_URL = "http://localhost:3001"
 
-Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/jobs/process-deliveries" -Headers @{ Authorization = "Bearer wrong-secret" }
+Invoke-RestMethod -Method Post -Uri "http://localhost:3001/api/jobs/process-deliveries" -Headers @{ Authorization = "Bearer wrong-secret" }
 ```
 
 Expected result: HTTP 401 `unauthorized`.
@@ -119,9 +119,9 @@ $env:DELIVERY_WORKER_ENABLED = "true"
 $env:DELIVERY_WORKER_SECRET = "local-worker-secret"
 $env:DELIVERY_WORKER_MODE = "dry_run"
 $env:DELIVERY_WORKER_BATCH_SIZE = "1"
-$env:NEXT_PUBLIC_APP_URL = "http://localhost:3000"
+$env:NEXT_PUBLIC_APP_URL = "http://localhost:3001"
 
-Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/jobs/process-deliveries" -Headers @{ Authorization = "Bearer local-worker-secret" }
+Invoke-RestMethod -Method Post -Uri "http://localhost:3001/api/jobs/process-deliveries" -Headers @{ Authorization = "Bearer local-worker-secret" }
 ```
 
 Expected result: the worker processes at most one queued email event and returns a processing summary.

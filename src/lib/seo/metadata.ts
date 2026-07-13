@@ -1,9 +1,10 @@
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, getLocalizedPath } from '../i18n/config';
 import type { Locale } from '../i18n/config';
 import { getMessages } from '../i18n/messages';
+import { resolveAppUrl } from '../utils/app-url';
 
 export function getBaseUrl(): URL {
-  const raw = process.env['NEXT_PUBLIC_APP_URL'] ?? 'http://localhost:3000';
+  const raw = resolveAppUrl();
   return new URL(raw);
 }
 

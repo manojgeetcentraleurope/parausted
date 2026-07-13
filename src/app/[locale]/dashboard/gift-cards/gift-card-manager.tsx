@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { CheckCircle2, Gift, Layers3 } from 'lucide-react';
 
 import { centsToEuros } from '@/lib/gift-cards/money';
 import type { GiftCardType } from '@/lib/gift-cards/schema';
@@ -19,6 +20,10 @@ import {
 
 export type GiftCardSectionCopy = {
   sectionTitle: string;
+  catalogueTitle: string;
+  catalogueDescription: string;
+  totalLabel: string;
+  activeCountLabel: string;
   emptyState: string;
   validityLabel: string;
   activeLabel: string;
@@ -136,7 +141,7 @@ function GiftCardRow({
   const toggleButtonDisabled = isPending || isEditingThisCard;
 
   return (
-    <li className="flex flex-col gap-4 py-5 sm:flex-row sm:items-start sm:justify-between">
+    <li className="flex flex-col gap-4 rounded-lg border border-stone-200 bg-white p-4 transition hover:border-stone-300 sm:flex-row sm:items-start sm:justify-between">
       <div className="space-y-1">
         <p className="text-sm font-medium text-slate-900">{card.title}</p>
         <p className="text-xs text-slate-500">
@@ -177,7 +182,7 @@ function GiftCardRow({
             type="button"
             onClick={() => onEdit(card)}
             disabled={isPending}
-            className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-cyan-300 hover:text-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex min-h-11 items-center justify-center rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 transition hover:border-teal-400 hover:text-teal-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {copy.editLabel}
           </button>
@@ -188,8 +193,8 @@ function GiftCardRow({
               disabled={toggleButtonDisabled}
               className={
                 card.active
-                  ? 'inline-flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
-                  : 'inline-flex items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
+                  ? 'inline-flex min-h-11 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
+                  : 'inline-flex min-h-11 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
               }
             >
               {isPending ? '…' : toggleLabel}
@@ -213,39 +218,71 @@ export function GiftCardManager({ locale, copy, giftCards }: Props) {
   }
 
   const isEditing = editingGiftCard !== null;
+  const activeCount = giftCards.filter((card) => card.active).length;
 
   return (
-    <section className="w-full rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
-      <h2 className="text-xl font-semibold tracking-tight text-slate-950">{copy.sectionTitle}</h2>
-
-      <div className="mt-8">
-        <GiftCardForm
-          key={editingGiftCard?.id ?? 'create'}
-          locale={locale}
-          copy={copy.form}
-          mode={isEditing ? 'edit' : 'create'}
-          giftCardId={editingGiftCard?.id}
-          initialValues={editingGiftCard === null ? undefined : mapGiftCardToFormValues(editingGiftCard)}
-          onCancelEdit={handleCancelEdit}
-        />
+    <section className="space-y-5">
+      <div className="grid grid-cols-2 gap-3 sm:max-w-lg">
+        <div className="rounded-lg border border-stone-200 bg-white p-4">
+          <div className="flex items-center gap-2 text-xs font-semibold text-stone-500">
+            <Layers3 aria-hidden="true" className="size-4" />
+            {copy.totalLabel}
+          </div>
+          <p className="mt-2 text-2xl font-bold tabular-nums text-stone-950">{giftCards.length}</p>
+        </div>
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50/70 p-4">
+          <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700">
+            <CheckCircle2 aria-hidden="true" className="size-4" />
+            {copy.activeCountLabel}
+          </div>
+          <p className="mt-2 text-2xl font-bold tabular-nums text-emerald-950">{activeCount}</p>
+        </div>
       </div>
 
-      <ul className="mt-8 divide-y divide-slate-100">
-        {giftCards.length === 0 ? (
-          <li className="py-4 text-sm text-slate-500">{copy.emptyState}</li>
-        ) : (
-          giftCards.map((card) => (
-            <GiftCardRow
-              key={card.id}
-              locale={locale}
-              card={card}
-              copy={copy}
-              isEditingThisCard={editingGiftCard?.id === card.id}
-              onEdit={handleEdit}
-            />
-          ))
-        )}
-      </ul>
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.12fr)_minmax(340px,0.88fr)]">
+        <div className="rounded-lg border border-stone-200 bg-white p-5 sm:p-7">
+          <GiftCardForm
+            key={editingGiftCard?.id ?? 'create'}
+            locale={locale}
+            copy={copy.form}
+            mode={isEditing ? 'edit' : 'create'}
+            giftCardId={editingGiftCard?.id}
+            initialValues={editingGiftCard === null ? undefined : mapGiftCardToFormValues(editingGiftCard)}
+            onCancelEdit={handleCancelEdit}
+          />
+        </div>
+
+        <aside className="rounded-lg border border-stone-200 bg-stone-50/70 p-4 sm:p-5 xl:sticky xl:top-24">
+          <div className="flex items-start gap-3 border-b border-stone-200 pb-4">
+            <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-teal-100 text-teal-800">
+              <Gift aria-hidden="true" className="size-[18px]" />
+            </span>
+            <div className="min-w-0">
+              <h2 className="font-bold tracking-tight text-stone-950">{copy.catalogueTitle}</h2>
+              <p className="mt-1 text-xs leading-5 text-stone-500">{copy.catalogueDescription}</p>
+            </div>
+          </div>
+
+          <ul className="mt-4 space-y-3">
+            {giftCards.length === 0 ? (
+              <li className="rounded-lg border border-dashed border-stone-300 bg-white px-4 py-8 text-center text-sm text-stone-500">
+                {copy.emptyState}
+              </li>
+            ) : (
+              giftCards.map((card) => (
+                <GiftCardRow
+                  key={card.id}
+                  locale={locale}
+                  card={card}
+                  copy={copy}
+                  isEditingThisCard={editingGiftCard?.id === card.id}
+                  onEdit={handleEdit}
+                />
+              ))
+            )}
+          </ul>
+        </aside>
+      </div>
     </section>
   );
 }

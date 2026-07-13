@@ -54,7 +54,7 @@ RESEND_AUDIENCE_ID=<optional-if-later-needed>
 EMAIL_FROM_ADDRESS=regalos@parausted.es
 EMAIL_FROM_NAME=ParaUsted
 EMAIL_REPLY_TO=support@parausted.es
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=http://localhost:3001
 ```
 
 Notes:

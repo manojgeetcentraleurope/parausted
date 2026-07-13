@@ -43,4 +43,4 @@ Stripe Connect (Express) handles all online payments. ParaUsted is the "platform
 ## Test Mode
 - Use `pk_test_` and `sk_test_` keys
 - Test card: 4242 4242 4242 4242 (any future expiry, any CVC)
-- Test webhook: `stripe listen --forward-to localhost:3000/api/webhooks/stripe`
+- Test webhook: `stripe listen --forward-to localhost:3001/api/webhooks/stripe`
