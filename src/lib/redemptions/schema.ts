@@ -27,12 +27,24 @@ export const redeemRequestSchema = z.object({
     .max(500)
     .optional()
     .transform((value) => (value && value.length > 0 ? value : undefined)),
+  amountCents: z
+    .number()
+    .int('invalid_amount')
+    .positive('invalid_amount')
+    .max(100_000_000, 'invalid_amount')
+    .optional(),
   partnerReference: z
     .string()
     .trim()
     .min(1)
     .max(128)
     .regex(/^[A-Za-z0-9._:-]+$/, 'invalid_partner_reference')
+    .optional(),
+  idempotencyKey: z
+    .string()
+    .trim()
+    .min(1)
+    .max(255)
     .optional(),
 });
 

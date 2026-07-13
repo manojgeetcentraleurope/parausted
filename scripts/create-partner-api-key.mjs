@@ -60,6 +60,7 @@ const { error: insertError } = await admin.from('partner_api_keys').insert({
   label,
   token_hash: tokenHash,
   token_prefix: tokenPrefix,
+  scopes: ['voucher:read', 'voucher:redeem'],
 });
 
 if (insertError) {

@@ -23,6 +23,10 @@ vi.mock('@/lib/partner/auth', () => ({
 vi.mock('@/lib/security/rate-limit', () => ({
   buildRateLimitKey: buildRateLimitKeyMock,
   checkRateLimit: checkRateLimitMock,
+  resolveRetryAfterSeconds: (
+    decision: { retryAfterSeconds: number },
+    fallback: number,
+  ) => (decision.retryAfterSeconds > 0 ? decision.retryAfterSeconds : fallback),
 }));
 
 vi.mock('@/lib/security/security-events', () => ({
@@ -140,6 +144,21 @@ describe('POST /api/partner/vouchers/[code]/redeem', () => {
     await expect(response.json()).resolves.toEqual({ success: false, error: 'unauthorized' });
     expect(recordSecurityEventMock).toHaveBeenCalledOnce();
     expect(resolvePartnerKeyMock).not.toHaveBeenCalled();
+  });
+
+  it('returns 429 with a Retry-After header when rate limited', async () => {
+    checkRateLimitMock.mockResolvedValueOnce(
+      createRateLimitDecision({ allowed: false, retryAfterSeconds: 30 }),
+    );
+
+    const response = await invokePost(
+      createRequest({ authorization: 'Bearer partner-token', body: {} }),
+    );
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get('retry-after')).toBe('30');
+    await expect(response.json()).resolves.toEqual({ success: false, error: 'rate_limited' });
+    expect(rpcMock).not.toHaveBeenCalled();
   });
 
   it('returns 400 when Idempotency-Key is blank', async () => {
@@ -293,6 +312,98 @@ describe('POST /api/partner/vouchers/[code]/redeem', () => {
       success: true,
       retrySafe: false,
       replay: false,
+    });
+  });
+
+  it('routes to the partial RPC and surfaces partially_redeemed status when amountCents is provided', async () => {
+    rpcMock.mockResolvedValueOnce({
+      data: {
+        success: true,
+        voucher_code: 'PU-123',
+        amount_cents: 1000,
+        balance_before: 2500,
+        balance_after: 1500,
+        redemption_id: 'redemption-1',
+        status: 'partially_redeemed',
+        idempotent_replay: false,
+      },
+      error: null,
+    });
+
+    const response = await invokePost(
+      createRequest({
+        authorization: 'Bearer partner-token',
+        body: { amountCents: 1000, partnerReference: 'booking:1001' },
+      }),
+    );
+
+    expect(rpcMock).toHaveBeenCalledWith('redeem_voucher_partial_for_merchant', {
+      p_merchant_id: 'merchant-1',
+      p_voucher_code: 'PU-123',
+      p_amount_cents: 1000,
+      p_notes: null,
+      p_actor_id: 'partner_api:pk_live_1234',
+      p_idempotency_key: 'hash:merchant-1:ref:booking:1001',
+    });
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      success: true,
+      voucherCode: 'PU-123',
+      amountCents: 1000,
+      balanceBefore: 2500,
+      balanceAfter: 1500,
+      status: 'partially_redeemed',
+      redemptionId: 'redemption-1',
+      replay: false,
+      retrySafe: true,
+    });
+  });
+
+  it('keeps using the full RPC when amountCents is absent', async () => {
+    const response = await invokePost(
+      createRequest({
+        authorization: 'Bearer partner-token',
+        body: { partnerReference: 'booking:1001' },
+      }),
+    );
+
+    expect(rpcMock).toHaveBeenCalledWith(
+      'redeem_voucher_full_for_merchant',
+      expect.not.objectContaining({ p_amount_cents: expect.anything() }),
+    );
+    expect(response.status).toBe(200);
+  });
+
+  it('rejects a non-positive amountCents at the schema boundary', async () => {
+    const response = await invokePost(
+      createRequest({
+        authorization: 'Bearer partner-token',
+        body: { amountCents: 0 },
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ success: false, error: 'invalid_request' });
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+
+  it('maps amount_exceeds_balance to HTTP 409', async () => {
+    rpcMock.mockResolvedValueOnce({
+      data: { success: false, error: 'amount_exceeds_balance' },
+      error: null,
+    });
+
+    const response = await invokePost(
+      createRequest({
+        authorization: 'Bearer partner-token',
+        body: { amountCents: 999999 },
+      }),
+    );
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      success: false,
+      error: 'amount_exceeds_balance',
     });
   });
 });

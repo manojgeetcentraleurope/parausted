@@ -11,7 +11,8 @@ export type RateLimitScope =
   | 'purchase_create'
   | 'voucher_lookup'
   | 'redemption_attempt'
-  | 'partner_redemption';
+  | 'partner_redemption'
+  | 'partner_voucher_verify';
 
 export type RateLimitDecision = {
   /** Whether the caller should be allowed to proceed. */
@@ -45,6 +46,21 @@ type RpcResult = {
  */
 export function buildRateLimitKey(scope: RateLimitScope, identifier: string): string {
   return `${scope}:${identifier.trim()}`;
+}
+
+/**
+ * Resolves the `Retry-After` value (seconds) for a throttled response.
+ *
+ * Prefers the window reset reported by the durable rate-limit RPC; falls back
+ * to the configured window length when the RPC did not supply one (e.g. 0).
+ * Callers surface this on the `Retry-After` header of a 429 so well-behaved
+ * clients back off instead of hot-looping.
+ */
+export function resolveRetryAfterSeconds(
+  decision: RateLimitDecision,
+  fallbackSeconds: number,
+): number {
+  return decision.retryAfterSeconds > 0 ? decision.retryAfterSeconds : fallbackSeconds;
 }
 
 /**

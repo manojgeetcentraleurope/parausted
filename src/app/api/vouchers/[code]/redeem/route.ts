@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-import { redeemVoucherFull } from '@/lib/redemptions/redeem-voucher';
+import { redeemVoucherFull, redeemVoucherPartial } from '@/lib/redemptions/redeem-voucher';
 import { redeemRequestSchema, voucherCodeSchema } from '@/lib/redemptions/schema';
 
 export const runtime = 'nodejs';
@@ -21,6 +21,8 @@ const ERROR_STATUS: Record<string, number> = {
   exchanged: 409,
   not_redeemable: 409,
   already_processed: 409,
+  invalid_amount: 400,
+  amount_exceeds_balance: 409,
   unknown: 500,
 };
 
@@ -60,7 +62,19 @@ export async function POST(
     return errorResponse('invalid_request');
   }
 
-  const result = await redeemVoucherFull(codeResult.data, bodyResult.data.notes);
+  // A supplied amount redeems part of the balance; its absence redeems the
+  // full remaining balance. Both share the same auth, rate limit, and atomic
+  // RPC guarantees via the shared redemption helper.
+  const amountCents = bodyResult.data.amountCents;
+  const result =
+    amountCents === undefined
+      ? await redeemVoucherFull(codeResult.data, bodyResult.data.notes)
+      : await redeemVoucherPartial(
+          codeResult.data,
+          amountCents,
+          bodyResult.data.notes,
+          bodyResult.data.idempotencyKey,
+        );
 
   if (!result.success) {
     return errorResponse(result.error ?? 'unknown');
@@ -73,6 +87,7 @@ export async function POST(
       amountCents: result.amountCents,
       balanceBefore: result.balanceBefore,
       balanceAfter: result.balanceAfter,
+      status: result.status,
       redemptionId: result.redemptionId,
     },
     { status: 200 },

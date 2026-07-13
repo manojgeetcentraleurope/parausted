@@ -15,6 +15,7 @@ export interface RedeemVoucherResult {
   balanceBefore?: number;
   balanceAfter?: number;
   redemptionId?: string;
+  status?: string;
 }
 
 interface RedeemVoucherRpcResult {
@@ -100,5 +101,81 @@ export async function redeemVoucherFull(
     amountCents: result.amount_cents,
     balanceBefore: result.balance_before,
     balanceAfter: result.balance_after,
+  };
+}
+
+/**
+ * Redeems a partial amount of a voucher's remaining balance.
+ *
+ * Mirrors {@link redeemVoucherFull}: the auth check and per-user rate limiting
+ * live here, while the `redeem_voucher_partial` RPC enforces tenant isolation,
+ * row locking, the amount bounds, and append-only redemption/audit writes. The
+ * merchant id is resolved from the session inside the RPC and never trusted
+ * from the client. Sets the voucher to `partially_redeemed` when a remainder
+ * is left, otherwise `redeemed`.
+ */
+export async function redeemVoucherPartial(
+  voucherCode: string,
+  amountCents: number,
+  notes?: string,
+  idempotencyKey?: string,
+): Promise<RedeemVoucherResult> {
+  const supabase = await createSupabaseServerClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: 'unauthorized' };
+  }
+
+  const rateLimitDecision = await checkRateLimit(
+    buildRateLimitKey('redemption_attempt', user.id),
+    30,
+    60,
+  );
+  if (rateLimitDecision.enforced && !rateLimitDecision.allowed) {
+    await recordSecurityEvent({
+      eventType: 'rate_limit_redemption_attempt',
+      endpoint: 'redeemVoucherPartial',
+      severity: 'warning',
+      autoAction: 'blocked',
+      details: {
+        scope: 'redemption_attempt',
+        code_fingerprint: fingerprintSensitiveToken(voucherCode),
+        count: rateLimitDecision.count,
+        limit: rateLimitDecision.limit,
+      },
+    });
+    return { success: false, error: 'rate_limited' };
+  }
+
+  const { data, error } = await supabase.rpc('redeem_voucher_partial', {
+    p_voucher_code: voucherCode,
+    p_amount_cents: amountCents,
+    p_notes: notes ?? null,
+    p_idempotency_key: idempotencyKey ?? null,
+  });
+
+  if (error) {
+    console.error('[redeemVoucherPartial] RPC error', { message: error.message });
+    return { success: false, error: 'unknown' };
+  }
+
+  const result = data as RedeemVoucherRpcResult;
+
+  if (!result.success) {
+    return { success: false, error: result.error ?? 'unknown' };
+  }
+
+  return {
+    success: true,
+    redemptionId: result.redemption_id,
+    voucherCode: result.voucher_code,
+    amountCents: result.amount_cents,
+    balanceBefore: result.balance_before,
+    balanceAfter: result.balance_after,
+    status: result.status,
   };
 }

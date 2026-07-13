@@ -5,7 +5,7 @@ import { parseBearerToken, resolvePartnerKey, touchPartnerKey } from '@/lib/part
 import { redeemRequestSchema, voucherCodeSchema } from '@/lib/redemptions/schema';
 import { getClientIpFromHeaders } from '@/lib/security/client-ip';
 import { fingerprintSensitiveToken, hashSensitiveToken } from '@/lib/security/hash';
-import { buildRateLimitKey, checkRateLimit } from '@/lib/security/rate-limit';
+import { buildRateLimitKey, checkRateLimit, resolveRetryAfterSeconds } from '@/lib/security/rate-limit';
 import { recordSecurityEvent } from '@/lib/security/security-events';
 import { supabaseAdminClient } from '@/lib/supabase/admin';
 
@@ -36,6 +36,8 @@ const ERROR_STATUS: Record<string, number> = {
   not_redeemable: 409,
   already_processed: 409,
   idempotency_conflict: 409,
+  invalid_amount: 400,
+  amount_exceeds_balance: 409,
   unknown: 500,
 };
 
@@ -154,7 +156,15 @@ export async function POST(
         limit: rateLimitDecision.limit,
       },
     });
-    return errorResponse('rate_limited');
+    return NextResponse.json(
+      { success: false, error: 'rate_limited' },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(resolveRetryAfterSeconds(rateLimitDecision, RATE_WINDOW_SECONDS)),
+        },
+      },
+    );
   }
 
   // 4. Validate the voucher code from the URL.
@@ -194,13 +204,27 @@ export async function POST(
   const retrySafe = idempotencyKey !== null;
 
   // 6. Redeem via the service-role RPC, passing the server-resolved merchant id.
-  const { data, error } = await supabaseAdminClient.rpc('redeem_voucher_full_for_merchant', {
-    p_merchant_id: partnerKey.merchantId,
-    p_voucher_code: codeResult.data,
-    p_notes: bodyResult.data.notes ?? null,
-    p_actor_id: `partner_api:${partnerKey.tokenPrefix}`,
-    p_idempotency_key: idempotencyKey,
-  });
+  //    A supplied amount redeems part of the balance; its absence redeems the
+  //    full remaining balance. Both paths share tenant scope, atomic locking,
+  //    append-only writes, and idempotency semantics.
+  const amountCents = bodyResult.data.amountCents;
+  const { data, error } =
+    amountCents === undefined
+      ? await supabaseAdminClient.rpc('redeem_voucher_full_for_merchant', {
+          p_merchant_id: partnerKey.merchantId,
+          p_voucher_code: codeResult.data,
+          p_notes: bodyResult.data.notes ?? null,
+          p_actor_id: `partner_api:${partnerKey.tokenPrefix}`,
+          p_idempotency_key: idempotencyKey,
+        })
+      : await supabaseAdminClient.rpc('redeem_voucher_partial_for_merchant', {
+          p_merchant_id: partnerKey.merchantId,
+          p_voucher_code: codeResult.data,
+          p_amount_cents: amountCents,
+          p_notes: bodyResult.data.notes ?? null,
+          p_actor_id: `partner_api:${partnerKey.tokenPrefix}`,
+          p_idempotency_key: idempotencyKey,
+        });
 
   await touchPartnerKey(partnerKey.id);
 
@@ -221,6 +245,7 @@ export async function POST(
       amountCents: result.amount_cents,
       balanceBefore: result.balance_before,
       balanceAfter: result.balance_after,
+      status: result.status,
       redemptionId: result.redemption_id,
       replay: result.idempotent_replay === true,
       retrySafe,
