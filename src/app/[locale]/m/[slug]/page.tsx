@@ -8,6 +8,7 @@ import { getCanonicalUrl, getAlternateLanguageUrls } from '@/lib/seo/metadata';
 import { centsToEuros } from '@/lib/gift-cards/money';
 import type { GiftCardType } from '@/lib/gift-cards/schema';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { AddonShowcase } from './addon-showcase';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -215,7 +216,7 @@ const GIFT_PRESENTATIONS: Record<string, readonly GiftPresentation[]> = {
     {
       occasion: { es: 'Para amantes de la historia', en: 'For history lovers' },
       promise: { es: 'Una llave privada al corazón de Sevilla', en: 'A private key to the heart of Seville' },
-      imageUrl: 'https://images.unsplash.com/photo-1569949381669-ecf31ae8e613?auto=format&fit=crop&w=1200&q=88',
+      imageUrl: 'https://images.unsplash.com/photo-1559564477-6e8582270002?auto=format&fit=crop&w=1200&q=88',
       surface: '#173b36', ink: '#fffaf0', accent: '#dfb56b', motif: 'ARCHIVE 01',
     },
     {
@@ -469,6 +470,12 @@ export default async function MerchantPublicPage({ params }: MerchantPageProps) 
           )}
         </div>
       </section>
+
+      <AddonShowcase
+        category={merchant.category}
+        locale={locale}
+        merchantName={merchant.name}
+      />
 
       <section className="bg-[#1d211d] px-5 py-16 text-white sm:px-8 sm:py-20">
         <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
