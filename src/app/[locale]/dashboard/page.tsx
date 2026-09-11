@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, getLocalizedPath, isSupportedLocale } from '@/lib/i18n/config';
@@ -11,12 +10,12 @@ import type { GiftCardType } from '@/lib/gift-cards/schema';
 import { OnboardingForm } from './onboarding-form';
 import type { OnboardingFormCopy } from './onboarding-form';
 import { GiftCardManager, type GiftCardSectionCopy } from './gift-cards/gift-card-manager';
-import { LogoutButton } from './logout-button';
 import { PurchaseManager } from './purchases/purchase-manager';
 import { RedemptionManager } from './redemptions/redemption-manager';
 import { listMerchantVouchers } from './vouchers/actions';
 import { VoucherHistoryManager } from './vouchers/voucher-history-manager';
 import { StripeSetupCard } from './stripe/stripe-setup-card';
+import { DashboardShell, type DashboardShellCopy } from './dashboard-shell';
 
 type DashboardPageProps = {
   params: Promise<{ locale: string }>;
@@ -123,7 +122,7 @@ const SUMMARY_COPY = {
     categoryLabel: 'Categoría',
     cityLabel: 'Ciudad',
     statusLabel: 'Estado',
-    nextStep: 'Tu perfil está activo. Pronto podrás crear y vender tarjetas regalo.',
+    nextStep: 'Tu tienda está activa. Revisa tu catálogo y la configuración de pagos antes de compartirla.',
     status: { active: 'Activo', suspended: 'Suspendido', closed: 'Cerrado' } as Record<string, string>,
     categories: {
       barber: 'Barbería',
@@ -139,7 +138,7 @@ const SUMMARY_COPY = {
     categoryLabel: 'Category',
     cityLabel: 'City',
     statusLabel: 'Status',
-    nextStep: 'Your profile is active. Gift cards are coming soon.',
+    nextStep: 'Your store is active. Review your catalogue and payment setup before sharing it.',
     status: { active: 'Active', suspended: 'Suspended', closed: 'Closed' } as Record<string, string>,
     categories: {
       barber: 'Barber',
@@ -152,32 +151,76 @@ const SUMMARY_COPY = {
   },
 } as const;
 
-const ACTIONS_COPY: Record<
-  Locale,
-  {
-    viewPublicPage: string;
-    home: string;
-    createFirstGiftCard: string;
-    comingSoon: string;
-    logout: string;
-    signingOut: string;
-  }
-> = {
+const DASHBOARD_SHELL_COPY: Record<Locale, DashboardShellCopy> = {
   es: {
-    viewPublicPage: 'Ver página pública',
-    home: 'Inicio',
-    createFirstGiftCard: 'Crear primera tarjeta regalo',
-    comingSoon: 'Próximamente',
+    workspaceLabel: 'Gestión del negocio',
+    navigationLabel: 'Navegación del panel',
+    openMenu: 'Abrir menú',
+    closeMenu: 'Cerrar menú',
+    viewStore: 'Ver tienda pública',
+    switchLanguage: 'Cambiar a inglés',
     logout: 'Cerrar sesión',
     signingOut: 'Cerrando sesión…',
+    welcome: 'Todo bajo control',
+    overviewTitle: 'Gestiona tus tarjetas regalo con claridad.',
+    overviewDescription: 'Confirma pagos, canjea vales y revisa la actividad desde un único lugar.',
+    quickAction: 'Acción rápida',
+    redeemNow: 'Canjear un vale',
+    redeemHint: 'Introduce el código del cliente',
+    giftCardsMetric: 'Tarjetas creadas',
+    activeGiftCardsMetric: 'Tarjetas activas',
+    vouchersMetric: 'Vales emitidos',
+    onlinePaymentsMetric: 'Pagos online',
+    connected: 'Conectados',
+    actionRequired: 'Requiere atención',
+    businessDetails: 'Datos del negocio',
+    publicAddress: 'Página pública',
+    category: 'Categoría',
+    city: 'Ciudad',
+    accountStatus: 'Estado de la cuenta',
+    navigation: {
+      overview: { label: 'Resumen', description: 'Estado general del negocio' },
+      redeem: { label: 'Canjear vale', description: 'Atender a un cliente' },
+      payments: { label: 'Pagos', description: 'Confirmar y reembolsar' },
+      vouchers: { label: 'Vales', description: 'Consultar historial' },
+      'gift-cards': { label: 'Tarjetas regalo', description: 'Crear y editar catálogo' },
+      settings: { label: 'Pagos online', description: 'Configurar Stripe' },
+    },
   },
   en: {
-    viewPublicPage: 'View public page',
-    home: 'Home',
-    createFirstGiftCard: 'Create first gift card',
-    comingSoon: 'Coming soon',
+    workspaceLabel: 'Business management',
+    navigationLabel: 'Dashboard navigation',
+    openMenu: 'Open menu',
+    closeMenu: 'Close menu',
+    viewStore: 'View public store',
+    switchLanguage: 'Switch to Spanish',
     logout: 'Log out',
     signingOut: 'Signing out…',
+    welcome: 'Everything in view',
+    overviewTitle: 'Manage your gift cards with clarity.',
+    overviewDescription: 'Confirm payments, redeem vouchers, and review activity from one focused workspace.',
+    quickAction: 'Quick action',
+    redeemNow: 'Redeem a voucher',
+    redeemHint: 'Enter the customer’s code',
+    giftCardsMetric: 'Gift cards created',
+    activeGiftCardsMetric: 'Active gift cards',
+    vouchersMetric: 'Vouchers issued',
+    onlinePaymentsMetric: 'Online payments',
+    connected: 'Connected',
+    actionRequired: 'Action required',
+    businessDetails: 'Business details',
+    publicAddress: 'Public page',
+    category: 'Category',
+    city: 'City',
+    accountStatus: 'Account status',
+    navigation: {
+      overview: { label: 'Overview', description: 'Business health at a glance' },
+      redeem: { label: 'Redeem voucher', description: 'Serve a customer' },
+      payments: { label: 'Payments', description: 'Confirm and refund' },
+      vouchers: { label: 'Vouchers', description: 'Review voucher history' },
+      'gift-cards': { label: 'Gift cards', description: 'Create and edit catalogue' },
+      settings: { label: 'Online payments', description: 'Configure Stripe' },
+    },
   },
 };
 
@@ -188,6 +231,10 @@ const ACTIONS_COPY: Record<
 const GIFT_CARD_COPY: Record<Locale, GiftCardSectionCopy> = {
   es: {
     sectionTitle: 'Tarjetas regalo',
+    catalogueTitle: 'Tu catálogo',
+    catalogueDescription: 'Revisa, edita y controla qué tarjetas están visibles en tu tienda.',
+    totalLabel: 'Total de tarjetas',
+    activeCountLabel: 'Activas',
     emptyState: 'Aún no has creado tarjetas regalo.',
     validityLabel: 'días de validez',
     activeLabel: 'Activa',
@@ -232,6 +279,10 @@ const GIFT_CARD_COPY: Record<Locale, GiftCardSectionCopy> = {
   },
   en: {
     sectionTitle: 'Gift cards',
+    catalogueTitle: 'Your catalogue',
+    catalogueDescription: 'Review, edit, and control which gift cards are visible in your store.',
+    totalLabel: 'Total gift cards',
+    activeCountLabel: 'Active',
     emptyState: 'You have not created any gift cards yet.',
     validityLabel: 'days validity',
     activeLabel: 'Active',
@@ -341,7 +392,6 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
   }
 
   const summaryCopy = SUMMARY_COPY[locale];
-  const actionsCopy = ACTIONS_COPY[locale];
   const giftCardCopy = GIFT_CARD_COPY[locale];
 
   const { data: giftCardsRaw } = await supabase
@@ -357,109 +407,40 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
   const voucherLoadError = voucherResult.ok ? null : voucherResult.error;
 
   const publicPagePath = getLocalizedPath(`/m/${merchant.slug}`, locale);
-  const homePath = getLocalizedPath('/', locale);
   const categoryLabel = summaryCopy.categories[merchant.category] ?? merchant.category;
   const statusLabel = summaryCopy.status[merchant.status] ?? merchant.status;
+  const alternateLocale = locale === 'es' ? 'en' : 'es';
+  const alternateDashboardPath = getLocalizedPath('/dashboard', alternateLocale);
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10 text-slate-900">
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
-        <section className="w-full rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
-          <p className="text-sm font-semibold uppercase tracking-[0.35em] text-cyan-700">
-            {messages.common.appName}
-          </p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
-            {merchant.name}
-          </h1>
-
-          <dl className="mt-8 grid gap-5 sm:grid-cols-2">
-            <div className="rounded-2xl bg-slate-50 p-5">
-              <dt className="text-sm font-medium text-slate-500">{summaryCopy.slugLabel}</dt>
-              <dd className="mt-2 break-all text-base font-medium text-cyan-800">
-                <Link
-                  className="inline-flex items-center rounded-lg outline-none transition hover:text-cyan-900 focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2"
-                  href={publicPagePath}
-                >
-                  {publicPagePath}
-                </Link>
-              </dd>
-            </div>
-
-            <div className="rounded-2xl bg-slate-50 p-5">
-              <dt className="text-sm font-medium text-slate-500">{summaryCopy.categoryLabel}</dt>
-              <dd className="mt-2 text-base font-medium text-slate-900">{categoryLabel}</dd>
-            </div>
-
-            <div className="rounded-2xl bg-slate-50 p-5">
-              <dt className="text-sm font-medium text-slate-500">{summaryCopy.cityLabel}</dt>
-              <dd className="mt-2 text-base font-medium text-slate-900">{merchant.city}</dd>
-            </div>
-
-            <div className="rounded-2xl bg-slate-50 p-5">
-              <dt className="text-sm font-medium text-slate-500">{summaryCopy.statusLabel}</dt>
-              <dd className="mt-2 text-base font-medium text-slate-900">{statusLabel}</dd>
-            </div>
-          </dl>
-
-          <div className="mt-6 rounded-2xl border border-cyan-100 bg-cyan-50 p-5">
-            <p className="text-sm font-medium text-cyan-900">{summaryCopy.nextStep}</p>
-          </div>
-
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <Link
-              className="flex min-h-28 flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50 p-5 transition hover:border-cyan-200 hover:bg-cyan-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2"
-              href={publicPagePath}
-            >
-              <span className="text-sm font-medium text-slate-500">{actionsCopy.viewPublicPage}</span>
-              <span className="mt-4 break-all text-sm font-semibold text-slate-900">{publicPagePath}</span>
-            </Link>
-
-            <Link
-              className="flex min-h-28 flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50 p-5 transition hover:border-cyan-200 hover:bg-cyan-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2"
-              href={homePath}
-            >
-              <span className="text-sm font-medium text-slate-500">{actionsCopy.home}</span>
-              <span className="mt-4 text-sm font-semibold text-slate-900">{homePath}</span>
-            </Link>
-
-            <div className="flex min-h-28 flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50 p-5">
-              <div>
-                <span className="text-sm font-medium text-slate-500">{actionsCopy.createFirstGiftCard}</span>
-                <span className="mt-2 block text-sm text-slate-500">{actionsCopy.comingSoon}</span>
-              </div>
-              <button
-                className="mt-4 inline-flex cursor-not-allowed items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-400"
-                disabled
-                type="button"
-              >
-                {actionsCopy.comingSoon}
-              </button>
-            </div>
-
-            <div className="flex min-h-28 flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50 p-5">
-              <span className="text-sm font-medium text-slate-500">{actionsCopy.logout}</span>
-              <LogoutButton
-                label={actionsCopy.logout}
-                locale={locale}
-                signingOutLabel={actionsCopy.signingOut}
-              />
-            </div>
-          </div>
-        </section>
-
-        <StripeSetupCard
-          locale={locale}
-          messages={messages.stripeSetup}
-          stripeAccountId={merchant.stripe_account_id}
-          stripeOnboarded={merchant.stripe_onboarded}
-        />
-
-        <GiftCardManager locale={locale} copy={giftCardCopy} giftCards={giftCards} />
-
-        <PurchaseManager messages={messages} locale={locale} />
-        <RedemptionManager messages={messages} locale={locale} />
-        <VoucherHistoryManager vouchers={merchantVouchers} messages={messages} locale={locale} loadError={voucherLoadError} />
-      </div>
-    </main>
+    <DashboardShell
+      locale={locale}
+      copy={DASHBOARD_SHELL_COPY[locale]}
+      merchantName={merchant.name}
+      publicPagePath={publicPagePath}
+      alternateDashboardPath={alternateDashboardPath}
+      categoryLabel={categoryLabel}
+      city={merchant.city}
+      statusLabel={statusLabel}
+      giftCardCount={giftCards.length}
+      activeGiftCardCount={giftCards.filter((card) => card.active).length}
+      voucherCount={merchantVouchers.length}
+      stripeConnected={merchant.stripe_onboarded}
+      overviewNotice={summaryCopy.nextStep}
+      panels={{
+        redeem: <RedemptionManager messages={messages} locale={locale} />,
+        payments: <PurchaseManager messages={messages} locale={locale} />,
+        vouchers: <VoucherHistoryManager vouchers={merchantVouchers} messages={messages} locale={locale} loadError={voucherLoadError} />,
+        'gift-cards': <GiftCardManager locale={locale} copy={giftCardCopy} giftCards={giftCards} />,
+        settings: (
+          <StripeSetupCard
+            locale={locale}
+            messages={messages.stripeSetup}
+            stripeAccountId={merchant.stripe_account_id}
+            stripeOnboarded={merchant.stripe_onboarded}
+          />
+        ),
+      }}
+    />
   );
 }

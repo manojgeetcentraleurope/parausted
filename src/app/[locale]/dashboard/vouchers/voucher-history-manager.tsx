@@ -119,7 +119,7 @@ export function VoucherHistoryManager({
   }, [vouchers, search, statusFilter]);
 
   return (
-    <section className="w-full rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
+    <section className="w-full rounded-lg border border-stone-200 bg-white p-5 sm:p-7">
       <h2 className="text-xl font-semibold tracking-tight text-slate-950">{t.title}</h2>
 
       {loadError !== null ? (
@@ -129,7 +129,7 @@ export function VoucherHistoryManager({
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
         <input
           aria-label={t.searchPlaceholder}
-          className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-200"
+          className="min-h-11 flex-1 rounded-lg border border-stone-300 bg-stone-50 px-4 py-2.5 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t.searchPlaceholder}
           type="search"
@@ -137,7 +137,7 @@ export function VoucherHistoryManager({
         />
         <select
           aria-label={t.filterLabel}
-          className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-200 sm:w-52"
+          className="min-h-11 rounded-lg border border-stone-300 bg-stone-50 px-4 py-2.5 text-sm text-stone-900 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100 sm:w-52"
           onChange={(e) => setStatusFilter(e.target.value)}
           value={statusFilter}
         >
@@ -153,7 +153,67 @@ export function VoucherHistoryManager({
       {filtered.length === 0 ? (
         <p className="mt-8 text-center text-sm text-slate-500">{t.empty}</p>
       ) : (
-        <div className="mt-6 overflow-x-auto">
+        <div className="mt-5 space-y-3 md:hidden">
+          {filtered.map((voucher) => (
+            <article key={voucher.id} className="rounded-lg border border-stone-200 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <Link
+                    className="inline-flex max-w-full items-center gap-1 font-mono text-sm font-bold text-teal-800 underline decoration-teal-300 underline-offset-4"
+                    href={`/${locale}/v/${voucher.code}`}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    <span className="truncate">{voucher.code}</span>
+                    <span aria-hidden="true">↗</span>
+                  </Link>
+                  <p className="mt-1 truncate text-sm text-stone-600">{voucher.recipient_name}</p>
+                </div>
+                <span
+                  className={`inline-block shrink-0 rounded-full px-2 py-1 text-xs font-medium ${STATUS_COLOR[voucher.status] ?? 'bg-gray-100 text-gray-800'}`}
+                >
+                  {statusLabel[voucher.status] ?? voucher.status}
+                </span>
+              </div>
+
+              <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-stone-100 pt-4 text-xs">
+                <div>
+                  <dt className="text-stone-500">{t.balance}</dt>
+                  <dd className="mt-1 text-base font-bold tabular-nums text-stone-950">
+                    {formatEur(voucher.balance_cents, locale)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-stone-500">{t.originalAmount}</dt>
+                  <dd className="mt-1 font-semibold tabular-nums text-stone-800">
+                    {formatEur(voucher.original_amount_cents, locale)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-stone-500">{t.purchaseRef}</dt>
+                  <dd className="mt-1 truncate font-mono font-medium text-stone-800">{voucher.reference_code}</dd>
+                </div>
+                <div>
+                  <dt className="text-stone-500">{t.expiresAt}</dt>
+                  <dd className="mt-1 font-medium text-stone-800">{formatDate(voucher.expires_at, locale)}</dd>
+                </div>
+              </dl>
+
+              {voucher.delivery_channel && voucher.delivery_status ? (
+                <div className="mt-4 flex items-center justify-between border-t border-stone-100 pt-3 text-xs">
+                  <span className="text-stone-500">{deliveryChannelLabel[voucher.delivery_channel] ?? voucher.delivery_channel}</span>
+                  <span className={`rounded-full px-2 py-1 font-medium ${DELIVERY_STATUS_COLOR[voucher.delivery_status] ?? 'bg-gray-100 text-gray-800'}`}>
+                    {deliveryStatusLabel[voucher.delivery_status] ?? voucher.delivery_status}
+                  </span>
+                </div>
+              ) : null}
+            </article>
+          ))}
+        </div>
+      )}
+
+      {filtered.length > 0 ? (
+        <div className="mt-6 hidden overflow-x-auto md:block">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200">
@@ -175,6 +235,8 @@ export function VoucherHistoryManager({
                     <Link
                       className="text-cyan-700 underline underline-offset-2 hover:text-cyan-900"
                       href={`/${locale}/v/${v.code}`}
+                      rel="noopener noreferrer"
+                      target="_blank"
                     >
                       {v.code}
                     </Link>
@@ -219,7 +281,7 @@ export function VoucherHistoryManager({
             </tbody>
           </table>
         </div>
-      )}
+      ) : null}
         </>
       )}
     </section>

@@ -196,7 +196,7 @@ npm run dev
 3. Invoke the worker once (type the secret directly; do not echo it):
 
 ```powershell
-curl.exe -X POST http://localhost:3000/api/jobs/process-deliveries -H "Authorization: Bearer <DELIVERY_WORKER_SECRET>" -H "Content-Type: application/json" -d '{\"batchSize\":1}'
+curl.exe -X POST http://localhost:3001/api/jobs/process-deliveries -H "Authorization: Bearer <DELIVERY_WORKER_SECRET>" -H "Content-Type: application/json" -d '{\"batchSize\":1}'
 ```
 
 (SQL checks from §5 run separately in the Supabase SQL editor / `psql`.)

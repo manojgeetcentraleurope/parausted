@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Caveat, Cormorant_Garamond, Geist, Geist_Mono, Manrope } from "next/font/google";
 import "./globals.css";
 
 import { DEFAULT_LOCALE, isSupportedLocale } from "@/lib/i18n/config";
@@ -12,6 +12,22 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+const giftElegant = Cormorant_Garamond({
+  variable: "--font-gift-elegant",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const giftModern = Manrope({
+  variable: "--font-gift-modern",
+  subsets: ["latin"],
+});
+
+const giftHandwritten = Caveat({
+  variable: "--font-gift-handwritten",
   subsets: ["latin"],
 });
 
@@ -32,7 +48,7 @@ export default async function RootLayout({
   return (
     <html
       lang={lang}
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${giftElegant.variable} ${giftModern.variable} ${giftHandwritten.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

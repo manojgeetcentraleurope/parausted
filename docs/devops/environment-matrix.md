@@ -4,7 +4,7 @@
 
 | Setting | Local Dev | Preview (PR) | Production |
 |---------|-----------|-------------|------------|
-| **URL** | localhost:3000 | *.vercel.app | parausted.es |
+| **URL** | localhost:3001 | *.vercel.app | parausted.es |
 | **Supabase** | Local (supabase start) | Staging project | Production project (EU Frankfurt) |
 | **Stripe** | Test mode (pk_test_, sk_test_) | Test mode | **Live mode (pk_live_, sk_live_)** |
 | **WhatsApp** | Test phone number | Test phone number | Production phone number |

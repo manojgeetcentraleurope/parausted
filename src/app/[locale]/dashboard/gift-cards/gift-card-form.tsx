@@ -91,10 +91,10 @@ const DEFAULT_FORM_VALUES: GiftCardFormValues = {
 };
 
 const INPUT_CLASSES =
-  'mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500';
+  'mt-1 block min-h-11 w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-100';
 
 const AMOUNT_INPUT_CLASSES =
-  'block w-full rounded-md border border-gray-300 py-2 pl-8 pr-3 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500';
+  'block min-h-11 w-full rounded-lg border border-stone-300 bg-white py-2.5 pl-8 pr-3 text-sm focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-100';
 
 const LABEL_CLASSES = 'block text-sm font-medium text-gray-700';
 const ERROR_CLASSES = 'mt-1 text-xs text-red-600';
@@ -169,13 +169,16 @@ export function GiftCardForm({
   const submitLabel = isEditMode ? copy.editSubmit : copy.submit;
   const submittingLabel = isEditMode ? copy.editSubmitting : copy.submitting;
   const successLabel = isEditMode ? copy.editSuccess : copy.success;
+  const amountExamples = locale === 'es'
+    ? { amount: 'Ej. 25 o 25,50', min: 'Ej. 10 o 10,50', max: 'Ej. 100 o 150,00' }
+    : { amount: 'E.g. 25 or 25.50', min: 'E.g. 10 or 10.50', max: 'E.g. 100 or 150.00' };
 
   const showAmountField =
     formValues.cardType === 'fixed_value' || formValues.cardType === 'service';
   const showRangeFields = formValues.cardType === 'custom_value';
 
   return (
-    <section className="w-full max-w-lg space-y-6">
+    <section className="w-full max-w-2xl space-y-6">
       <div>
         <h2 className="text-xl font-semibold text-gray-900">{heading}</h2>
         {copy.description && (
@@ -212,7 +215,7 @@ export function GiftCardForm({
                 ? 'cardType-error'
                 : undefined
             }
-            className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="mt-1 block min-h-11 w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-100"
           >
             {GIFT_CARD_TYPES.map((type) => (
               <option key={type} value={type}>
@@ -390,7 +393,7 @@ export function GiftCardForm({
               />
             </div>
             <p id="amount-hint" className={HINT_CLASSES}>
-              Ej. 25 o 25,50
+              {amountExamples.amount}
             </p>
             {fieldErrors['amount'] !== undefined && (
               <p id="amount-error" role="alert" className={ERROR_CLASSES}>
@@ -430,7 +433,7 @@ export function GiftCardForm({
                 />
               </div>
               <p id="minAmount-hint" className={HINT_CLASSES}>
-                Ej. 10 o 10,50
+                {amountExamples.min}
               </p>
               {fieldErrors['minAmount'] !== undefined && (
                 <p id="minAmount-error" role="alert" className={ERROR_CLASSES}>
@@ -464,7 +467,7 @@ export function GiftCardForm({
                 />
               </div>
               <p id="maxAmount-hint" className={HINT_CLASSES}>
-                Ej. 100 o 150,00
+                {amountExamples.max}
               </p>
               {fieldErrors['maxAmount'] !== undefined && (
                 <p id="maxAmount-error" role="alert" className={ERROR_CLASSES}>
@@ -520,7 +523,7 @@ export function GiftCardForm({
               type="checkbox"
               checked={formValues.active}
               onChange={(e) => handleChange('active', e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              className="size-5 rounded border-stone-300 text-teal-700 focus:ring-teal-600"
             />
             <label htmlFor="active" className="text-sm font-medium text-gray-700">
               {copy.fields.active}
@@ -554,7 +557,7 @@ export function GiftCardForm({
               type="button"
               onClick={onCancelEdit}
               disabled={isPending}
-              className="w-full rounded-md border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+              className="min-h-11 w-full rounded-lg border border-stone-300 bg-white px-4 py-2.5 text-sm font-semibold text-stone-700 hover:bg-stone-50 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
             >
               {copy.cancelEdit}
             </button>
@@ -565,8 +568,8 @@ export function GiftCardForm({
             disabled={isPending}
             className={
               isEditMode
-                ? 'w-full flex-1 rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
-                : 'w-full rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
+                ? 'min-h-11 w-full flex-1 rounded-lg bg-teal-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-900 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
+                : 'min-h-11 w-full rounded-lg bg-teal-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-900 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
             }
           >
             {isPending ? submittingLabel : submitLabel}

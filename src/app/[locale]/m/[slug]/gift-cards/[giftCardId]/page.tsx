@@ -7,9 +7,10 @@ import { getCanonicalUrl, getAlternateLanguageUrls } from '@/lib/seo/metadata';
 import { centsToEuros } from '@/lib/gift-cards/money';
 import type { GiftCardType } from '@/lib/gift-cards/schema';
 import type { DirectPaymentMethod } from '@/lib/purchases/schema';
+import { supabaseAdminClient } from '@/lib/supabase/admin';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { getStripeClient } from '@/lib/stripe/server';
-import { PurchaseForm } from './purchase-form';
+import { PurchaseExperience } from './purchase-experience';
 import type { GiftCardDisplayData, MerchantDisplayData, CheckoutReturnStatus } from './purchase-form';
 
 // ---------------------------------------------------------------------------
@@ -181,6 +182,10 @@ async function resolveCheckoutReturnStatus(input: {
     const stripe = getStripeClient();
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
+    if (session.payment_status !== 'paid' || session.mode !== 'payment') {
+      return { kind: 'success_preparing' };
+    }
+
     // Validate this session belongs to this gift card when metadata is present
     if (
       session.metadata?.gift_card_id &&
@@ -198,8 +203,7 @@ async function resolveCheckoutReturnStatus(input: {
     }
 
     // Read-only voucher lookup — no mutations
-    const supabase = await createSupabaseServerClient();
-    const { data: voucherData } = await supabase
+    const { data: voucherData } = await supabaseAdminClient
       .from('vouchers')
       .select('code')
       .eq('purchase_id', purchaseId)
@@ -303,17 +307,13 @@ export default async function PurchasePage({ params, searchParams }: PageProps) 
   };
 
   return (
-    <main className="min-h-screen bg-white px-4 py-10 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-xl">
-        <PurchaseForm
-          locale={locale}
-          merchant={merchantDisplay}
-          giftCard={giftCardDisplay}
-          availablePaymentMethods={availablePaymentMethods}
-          stripeCardAvailable={merchant.stripe_onboarded}
-          checkoutReturnStatus={checkoutReturnStatus}
-        />
-      </div>
-    </main>
+    <PurchaseExperience
+      locale={locale}
+      merchant={merchantDisplay}
+      giftCard={giftCardDisplay}
+      availablePaymentMethods={availablePaymentMethods}
+      stripeCardAvailable={merchant.stripe_onboarded}
+      checkoutReturnStatus={checkoutReturnStatus}
+    />
   );
 }

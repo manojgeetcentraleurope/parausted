@@ -213,7 +213,9 @@ Direct payments (Bizum/cash/bank): No payout logic. Merchant already has the mon
 | Merchant staff accounts | Invite-based Magic Link, can redeem + view dashboard only |
 | Trust tier payouts | Faster unredeemed payouts for proven merchants (20+ sales) |
 | Buyer "Mis Regalos" history | Lightweight Magic Link account — see all gifts sent/received |
-| Time-slot discounting | Sell discounted gift cards for off-peak hours |
+| ~~Time-slot discounting~~ | **Superseded by Offer Engine** — see [PRD v1.2 Change Pack §5](ParaUsted_PRD_v1_2_Change_Pack_AddOns_and_Offers.md#5-offer-engine). Mechanic changed from percentage-off to bonus-value. |
+| Offer engine | Promo codes (purchase-side) + off-peak redemption offers. Bonus value, not percentage off. See PRD v1.2 Change Pack §5. |
+| Add-ons | Merchant souvenirs/products alongside the gift card. Tour-first, pickup-first. See PRD v1.2 Change Pack §4. |
 | Loyalty cards | Return-visit incentive cards |
 | Auto-reminders to recipients | "Your gift is waiting!" — Day 1, 3, 7 |
 | Advanced analytics dashboard | Revenue trends, popular cards, buyer demographics |
@@ -1167,7 +1169,7 @@ parausted/
 |---|---|---|---|
 | **V1 — MVP** | 0-8 weeks | Barbers in Seville | Gift cards, family collection, Stripe Connect, offline tracking, PDF, WhatsApp/Email, dashboard, QR redemption |
 | **V1.5 — Polish** | 8-14 weeks | + Restaurants + Gyms | Custom amounts, scheduled delivery, analytics, auto-reminders, ES/EN |
-| **V2 — Growth** | 14-24 weeks | + Tour operators | Time-slot discounting, loyalty, staff accounts, trust tiers, buyer history, upgrade payment, combined cards |
+| **V2 — Growth** | 14-24 weeks | + Tour operators | Offer engine (promo codes + off-peak bonus value), add-ons (tour-first, pickup), loyalty, staff accounts, trust tiers, buyer history, upgrade payment, combined cards |
 | **V3 — Scale** | 24-36 weeks | Multi-city + B2B | Corporate bulk, city discovery, API, multi-location, white-label, SSO/SAML |
 | **V4 — Expand** | 36-52 weeks | LATAM + Enterprise | LATAM expansion, enterprise plans, advanced analytics, Bizum integration (licensed) |
 
@@ -1318,6 +1320,15 @@ parausted/
 **Version:** 1.0
 **Status:** ✅ APPROVED — All Pillars Locked
 **Date:** June 2026
+
+### Active Change Packs
+
+This PRD is locked at v1.0. Subsequent product decisions are captured in versioned change packs, which take precedence where they conflict.
+
+| Pack | Scope |
+|---|---|
+| [v1.1 Change Pack](ParaUsted_PRD_v1_1_Change_Pack.md) | Spain-first positioning, direct payment confirmation, rich-media gift experience |
+| [v1.2 Change Pack](ParaUsted_PRD_v1_2_Change_Pack_AddOns_and_Offers.md) | Add-ons (tour-first) + offer engine. Supersedes §6.2 "Time-slot discounting" |
 
 ---
 

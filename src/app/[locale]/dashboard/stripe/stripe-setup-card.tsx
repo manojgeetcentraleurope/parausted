@@ -104,7 +104,7 @@ export function StripeSetupCard({
   const statusLabel = getStatusLabel();
 
   return (
-    <section className="w-full rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
+    <section className="w-full rounded-lg border border-stone-200 bg-white p-5 sm:p-7">
       <h2 className="text-xl font-semibold tracking-tight text-slate-950">{messages.title}</h2>
       <p className="mt-2 text-sm text-slate-600">{messages.description}</p>
 

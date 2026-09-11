@@ -75,7 +75,7 @@ Each localised page will eventually declare:
 
 `x-default` points to the Spanish version because Spanish is the primary commercial market. Helper functions in `src/lib/seo/metadata.ts` (`getCanonicalUrl`, `getAlternateLanguageUrls`) codify this strategy so every `generateMetadata` call is consistent.
 
-The canonical base URL is driven by `NEXT_PUBLIC_APP_URL`. In production this is `https://parausted.es`; in local development it falls back to `http://localhost:3000`.
+The canonical base URL is driven by `NEXT_PUBLIC_APP_URL`. In production this is `https://parausted.es`; in local development it falls back to `http://localhost:3001`.
 
 ### 6. No `next-intl` (or equivalent i18n library) at this stage
 

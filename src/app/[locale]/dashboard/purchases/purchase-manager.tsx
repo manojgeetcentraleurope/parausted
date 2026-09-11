@@ -124,8 +124,8 @@ function ConfirmDialog({
   isPending: boolean;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
+      <div className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-lg bg-white p-5 shadow-xl sm:p-6">
         <h3 className="text-lg font-semibold">{t.confirmTitle}</h3>
         <p className="mt-2 text-sm text-gray-600">{t.confirmMessage}</p>
         <p className="mt-3 text-sm">
@@ -139,7 +139,7 @@ function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={isPending}
-            className="rounded border px-4 py-2 text-sm hover:bg-gray-50"
+            className="min-h-11 rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold hover:bg-stone-50"
           >
             {t.cancel}
           </button>
@@ -147,7 +147,7 @@ function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={isPending}
-            className="rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+            className="min-h-11 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50"
           >
             {isPending ? '...' : t.confirm}
           </button>
@@ -174,8 +174,8 @@ function RejectDialog({
 }) {
   const [reason, setReason] = useState('');
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
+      <div className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-lg bg-white p-5 shadow-xl sm:p-6">
         <h3 className="text-lg font-semibold text-red-700">{t.rejectTitle}</h3>
         <p className="mt-2 text-sm text-gray-600">{t.rejectMessage}</p>
         <p className="mt-3 text-sm">
@@ -189,7 +189,7 @@ function RejectDialog({
             maxLength={500}
             rows={2}
             placeholder={t.rejectReasonPlaceholder}
-            className="mt-1 block w-full rounded border p-2 text-sm"
+            className="mt-2 block w-full rounded-lg border border-stone-300 p-3 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
           />
         </label>
         <div className="mt-6 flex justify-end gap-3">
@@ -197,7 +197,7 @@ function RejectDialog({
             type="button"
             onClick={onCancel}
             disabled={isPending}
-            className="rounded border px-4 py-2 text-sm hover:bg-gray-50"
+            className="min-h-11 rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold hover:bg-stone-50"
           >
             {t.cancel}
           </button>
@@ -205,7 +205,7 @@ function RejectDialog({
             type="button"
             onClick={() => onReject(reason || undefined)}
             disabled={isPending}
-            className="rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+            className="min-h-11 rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-50"
           >
             {isPending ? '...' : t.reject}
           </button>
@@ -238,8 +238,8 @@ function RefundDialog({
   const message = mode === 'online' ? t.onlineRefundMessage : t.refundMessage;
   const buttonLabel = mode === 'online' ? t.onlineRefund : t.refund;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
+      <div className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-lg bg-white p-5 shadow-xl sm:p-6">
         <h3 className="text-lg font-semibold text-red-700">{title}</h3>
         <p className="mt-2 text-sm text-gray-600">{message}</p>
         <p className="mt-3 text-sm">
@@ -256,7 +256,7 @@ function RefundDialog({
             maxLength={500}
             rows={2}
             placeholder={t.refundReasonPlaceholder}
-            className="mt-1 block w-full rounded border p-2 text-sm"
+            className="mt-2 block w-full rounded-lg border border-stone-300 p-3 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
           />
         </label>
         <div className="mt-6 flex justify-end gap-3">
@@ -264,7 +264,7 @@ function RefundDialog({
             type="button"
             onClick={onCancel}
             disabled={isPending}
-            className="rounded border px-4 py-2 text-sm hover:bg-gray-50"
+            className="min-h-11 rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold hover:bg-stone-50"
           >
             {t.cancel}
           </button>
@@ -272,7 +272,7 @@ function RefundDialog({
             type="button"
             onClick={() => onRefund(trimmed)}
             disabled={isPending || trimmed.length === 0}
-            className="rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+            className="min-h-11 rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-50"
           >
             {isPending ? '...' : buttonLabel}
           </button>
@@ -464,8 +464,8 @@ export function PurchaseManager({ messages, locale }: PurchaseManagerProps) {
 
   // ── Render ─────────────────────────────────────────────────────
   return (
-    <section className="mt-8">
-      <h2 className="text-xl font-bold">{t.title}</h2>
+    <section className="rounded-lg border border-stone-200 bg-white p-5 sm:p-7">
+      <h2 className="text-xl font-bold tracking-tight text-stone-950">{t.title}</h2>
 
       {/* Feedback toast */}
       {feedback && (
@@ -503,7 +503,7 @@ export function PurchaseManager({ messages, locale }: PurchaseManagerProps) {
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
           placeholder={t.searchPlaceholder}
-          className="w-full max-w-sm rounded border p-2 text-sm"
+          className="w-full max-w-sm rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
         />
       </div>
 
@@ -511,7 +511,96 @@ export function PurchaseManager({ messages, locale }: PurchaseManagerProps) {
       {purchases.length === 0 && !isPending ? (
         <p className="mt-4 text-sm text-gray-500">{t.noPending}</p>
       ) : (
-        <div className="mt-4 overflow-x-auto">
+        <div className="mt-5 space-y-3 md:hidden">
+          {purchases.map((purchase) => (
+            <article
+              key={purchase.id}
+              className={`rounded-lg border p-4 ${purchase.status === 'pending' && purchase.is_expired ? 'border-red-200 bg-red-50/40' : 'border-stone-200'}`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-stone-950">{purchase.gift_card_title}</p>
+                  <p className="mt-1 font-mono text-xs text-stone-500">{purchase.reference_code}</p>
+                </div>
+                <p className="shrink-0 font-bold tabular-nums text-stone-950">
+                  €{(purchase.amount_cents / 100).toFixed(2)}
+                </p>
+              </div>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <StatusBadge status={purchase.status} t={t} />
+                <PaymentMethodBadge method={purchase.payment_method} t={t} />
+                {purchase.status === 'pending' ? (
+                  <ExpiryBadge expiresAt={purchase.expires_at} isExpired={purchase.is_expired} t={t} />
+                ) : null}
+              </div>
+              <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-stone-100 pt-3 text-xs">
+                <div>
+                  <dt className="text-stone-500">{t.recipientName}</dt>
+                  <dd className="mt-1 truncate font-medium text-stone-800">{purchase.recipient_name}</dd>
+                </div>
+                <div>
+                  <dt className="text-stone-500">{t.createdAt}</dt>
+                  <dd className="mt-1 font-medium text-stone-800">
+                    {new Date(purchase.created_at).toLocaleDateString(locale)}
+                  </dd>
+                </div>
+              </dl>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {purchase.status === 'pending' ? (
+                  <>
+                    {!purchase.is_expired ? (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmTarget(purchase)}
+                        className="min-h-11 rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-800"
+                      >
+                        {t.confirmPayment}
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => setRejectTarget(purchase)}
+                      className="min-h-11 rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50"
+                    >
+                      {t.rejectPayment}
+                    </button>
+                  </>
+                ) : null}
+                {purchase.status === 'payment_confirmed' && purchase.payment_source === 'OFFLINE' ? (
+                  <button
+                    type="button"
+                    onClick={() => setRefundTarget(purchase)}
+                    className="min-h-11 rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50"
+                  >
+                    {t.refundVoid}
+                  </button>
+                ) : null}
+                {purchase.status === 'payment_confirmed' && purchase.payment_source === 'ONLINE' && isOnlineRefundEligible(purchase) ? (
+                  <button
+                    type="button"
+                    onClick={() => setOnlineRefundTarget(purchase)}
+                    className="min-h-11 rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50"
+                  >
+                    {t.onlineRefund}
+                  </button>
+                ) : null}
+                {purchase.status === 'refund_failed' && purchase.payment_source === 'ONLINE' ? (
+                  <button
+                    type="button"
+                    onClick={() => setOnlineRefundTarget(purchase)}
+                    className="min-h-11 rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50"
+                  >
+                    {t.retryRefund}
+                  </button>
+                ) : null}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+
+      {purchases.length > 0 ? (
+        <div className="mt-5 hidden overflow-x-auto md:block">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b text-xs font-medium uppercase text-gray-500">
               <tr>
@@ -612,7 +701,7 @@ export function PurchaseManager({ messages, locale }: PurchaseManagerProps) {
             </tbody>
           </table>
         </div>
-      )}
+      ) : null}
 
       {/* Loading indicator */}
       {isPending && <p className="mt-2 text-xs text-gray-400">Loading...</p>}

@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { supabaseAdminClient } from '@/lib/supabase/admin';
+import { resolveAppUrl } from '@/lib/utils/app-url';
 
 import type { DeliveryContext } from './types';
 
@@ -79,7 +80,7 @@ export async function loadDeliveryContext(
     return null;
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+  const appUrl = resolveAppUrl();
   const voucherCode = voucherResult.data.code;
   const voucherUrl = `${appUrl}/es/v/${voucherCode}`;
 

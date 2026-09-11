@@ -29,6 +29,22 @@ export const DESIGN_TEMPLATE_VALUES = [
 
 export type DesignTemplate = (typeof DESIGN_TEMPLATE_VALUES)[number];
 
+export const OCCASION_VALUES = [
+  'birthday',
+  'anniversary',
+  'wedding',
+  'thank_you',
+  'congratulations',
+  'christmas',
+  'just_because',
+] as const;
+
+export type Occasion = (typeof OCCASION_VALUES)[number];
+
+export const FONT_STYLE_VALUES = ['elegant', 'modern', 'handwritten'] as const;
+
+export type FontStyle = (typeof FONT_STYLE_VALUES)[number];
+
 export const DIRECT_PAYMENT_METHODS = [
   'bizum_direct',
   'bank_transfer',
@@ -91,6 +107,8 @@ export const purchaseFormSchema = z.object({
     .email('Valid recipient email required'),
   relationship: z.enum(RELATIONSHIP_VALUES, { message: 'Relationship is required' }),
   designTemplate: z.enum(DESIGN_TEMPLATE_VALUES, { message: 'Design template is required' }),
+  occasion: z.enum(OCCASION_VALUES).default('just_because'),
+  fontStyle: z.enum(FONT_STYLE_VALUES).default('elegant'),
   senderName: z
     .string()
     .trim()
@@ -123,6 +141,8 @@ export function extractPurchaseFormData(formData: FormData): Record<string, unkn
     recipientEmail: getOptionalString(formData.get('recipientEmail')),
     relationship: getOptionalString(formData.get('relationship')),
     designTemplate: getOptionalString(formData.get('designTemplate')),
+    occasion: getOptionalString(formData.get('occasion')),
+    fontStyle: getOptionalString(formData.get('fontStyle')),
     senderName: getOptionalString(formData.get('senderName')),
     personalMessage: getOptionalString(formData.get('personalMessage')),
     customAmountInput: getOptionalString(formData.get('customAmountInput')),
